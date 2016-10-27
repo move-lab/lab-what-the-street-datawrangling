@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>title</title>
+  <meta name="author" content="name">
+  <meta name="description" content="description here">
+  <meta name="keywords" content="keywords,here">
+  <style type="text/css">
+  	#carWrapper{
+  		position: absolute;
+  		width: 1px;
+  		height: 1px;
+  		top: 200px;
+   		left: 500px;
+  	}
+   	#car{
+   		position: absolute;
+	    width: 4px;
+	    height: 10px;
+	    background: black;
+	    top: -5px;
+	    left: -2px;
+   	}
+
+    .carDot{
+      position: absolute;
+    }
+
+    .carDot .inner{
+      border-radius: 2px;
+      width: 10px;
+      height: 10px;
+      background: #000000;
+      position: absolute;
+    }
+  </style>
+  </head>
+  <body>
+  	<!-- <div id="carWrapper">
+  		<div id="car"></div>
+  	</div> -->
+  <div id="cars">
+
+  </div>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+
+  <script>
+  	
+    var carRows = 20;
+    var carCols = 5;
+    var carOffset = 15;
+    var numberOfCars = carRows * carCols;
+    var cars = [];
+    for (var i = 0; i < carRows; i++) {
+      for (var j = 0; j < carCols; j++) {
+        var startX = 400 + j*carOffset;
+        var startY = 80 + i*carOffset;
+        var index = i*carCols + j;
+        var carId = "car" + index;
+        var carSettings = {
+          id: carId,
+          x: startX,
+          y: startY,
+          speed: Math.random()*2+1,
+          direction: 0,
+          rotation: 0,
+          backwards: 1,
+          counterStart: 0,
+          counter: 0
+        }
+        cars.push(carSettings)
+        $( "#cars" ).append( "<div id='" + carId + "' class='carDot' style='left:" + startX + "px; top:" + startY + "px;'><div class='inner'></div></div>" );
+      };
+    };
+
+  	function loop(){
+      for (var i = numberOfCars*0.75; i < numberOfCars; i++) {
+        car = cars[i]
+        
+        car.counter --;
+        if (car.counter <= 0) {
+          car.counterStart = resetCounter();
+          car.counter = car.counterStart;
+          car.direction = resetDirection();
+          car.backwards = -car.backwards
+        };
+        var absoluteRotation = car.rotation + car.direction;
+
+        var currentSpeed = sineEase(getPercentage(car.counter, car.counterStart))*car.speed;
+        
+        var rotationalSpeed = sineEase(getPercentage(car.counter, car.counterStart));
+        var update = move(car.direction, absoluteRotation, currentSpeed, rotationalSpeed, car.backwards);
+        
+        car.x += update.dx;
+        car.y += update.dy;
+        car.rotation += update.r;
+
+        $('#' + car.id).css({top: car.y, left: car.x});
+        $('#' + car.id + ' .inner').css({'transform' : 'rotate('+ (-car.rotation) +'deg)'});
+      };
+  	}
+
+  	function move(direction, absoluteRotation, speed, rotationalSpeed, backwards){
+  		dx = Math.sin(Math.radians(absoluteRotation))*speed*backwards;
+  		dy = Math.cos(Math.radians(absoluteRotation))*speed*backwards;
+      return {
+        dx: dx,
+        dy: dy,
+        r: (direction*rotationalSpeed)
+      }
+  	}
+
+
+  	function resetCounter(){
+  		return Math.random()*50+20;
+  	}
+
+  	function resetDirection(){
+  		var range = 20;
+  		return Math.random()*range-range/2
+  	}
+
+  	function sineEase(percentage){
+  		return (Math.sin( (percentage*100 - 25)*(Math.PI/50) ) + 1) //results between 0 and 1
+  	}
+
+  	function getPercentage(number, max){
+  		return number/max;
+  	}
+	
+  	// Converts from degrees to radians.
+  	Math.radians = function(degrees) {
+  	  return degrees * Math.PI / 180;
+  	};
+  	 
+  	// Converts from radians to degrees.
+  	Math.degrees = function(radians) {
+  	  return radians * 180 / Math.PI;
+  	};
+
+    setTimeout(function(){
+      setInterval(function(){ loop(); }, 30);  
+    },1000);
+  	
+  </script>
+  </body>
+</html>

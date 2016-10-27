@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>title</title>
+  <meta name="author" content="name">
+  <meta name="description" content="description here">
+  <meta name="keywords" content="keywords,here">
+  <style type="text/css">
+  	#carWrapper{
+  		position: absolute;
+  		width: 1px;
+  		height: 1px;
+  		top: 200px;
+   		left: 500px;
+  	}
+   	#car{
+   		position: absolute;
+	    width: 4px;
+	    height: 10px;
+	    background: black;
+	    top: -5px;
+	    left: -2px;
+   	}
+  </style>
+  </head>
+  <body>
+  	<div id="carWrapper">
+  		<div id="car"></div>
+  	</div>
+  
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+
+  <script>
+  	
+  	var counterStart = 0;
+  	var counter = counterStart;
+  	var x = 500;
+  	var y = 200;
+  	var speed = 3;
+  	var direction = 0;
+  	var rotation = 0;
+  	var backwards = 1;
+
+  	function loop(){
+  		counter --;
+  		if (counter <= 0) {
+  			resetCounter();
+  			resetDirection();
+  			reverse();
+  		};
+  		var absoluteRotation = rotation + direction;
+  		var currentSpeed = sineEase(getPercentage(counter, counterStart))*speed;
+  		var rotationalSpeed = sineEase(getPercentage(counter, counterStart));
+  		console.log(sineEase(getPercentage(counter, counterStart)));
+  		move(absoluteRotation, currentSpeed, rotationalSpeed);
+  		updateCar();
+  		console.log(counter);
+  	}
+
+  	function reverse(){
+  		backwards = -backwards;
+  	}
+
+  	function move(absoluteRotation, speed, rotationalSpeed){
+  		dx = Math.sin(Math.radians(absoluteRotation))*speed*backwards;
+  		dy = Math.cos(Math.radians(absoluteRotation))*speed*backwards;
+  		x += dx;
+  		y += dy;
+  		rotation += direction*rotationalSpeed
+  	}
+
+  	function updateCar(){
+  		$('#carWrapper').css({top: y, left: x});
+  		$('#car').css({'transform' : 'rotate('+ (-rotation) +'deg)'});
+  	}
+
+
+  	function resetCounter(){
+  		counterStart = Math.random()*50+20;
+  		counter = counterStart
+  	}
+
+  	function resetDirection(){
+  		var range = 30;
+  		direction = Math.random()*range-range/2
+  	}
+
+  	function sineEase(percentage){
+  		return (Math.sin( (percentage*100 - 25)*(Math.PI/50) ) + 1) //results between 0 and 1
+  	}
+
+  	function getPercentage(number, max){
+  		return number/max;
+  	}
+	
+	// Converts from degrees to radians.
+	Math.radians = function(degrees) {
+	  return degrees * Math.PI / 180;
+	};
+	 
+	// Converts from radians to degrees.
+	Math.degrees = function(radians) {
+	  return radians * 180 / Math.PI;
+	};
+
+  	setInterval(function(){ loop(); }, 30);
+  </script>
+  </body>
+</html>
