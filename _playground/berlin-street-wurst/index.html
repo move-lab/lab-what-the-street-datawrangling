@@ -1,53 +1,17 @@
-<style type="text/css">
-	/* http://meyerweb.com/eric/tools/css/reset/ 
-	   v2.0 | 20110126
-	   License: none (public domain)
-	*/
-
-	html, body, div, span, applet, object, iframe,
-	h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-	a, abbr, acronym, address, big, cite, code,
-	del, dfn, em, img, ins, kbd, q, s, samp,
-	small, strike, strong, sub, sup, tt, var,
-	b, u, i, center,
-	dl, dt, dd, ol, ul, li,
-	fieldset, form, label, legend,
-	table, caption, tbody, tfoot, thead, tr, th, td,
-	article, aside, canvas, details, embed, 
-	figure, figcaption, footer, header, hgroup, 
-	menu, nav, output, ruby, section, summary,
-	time, mark, audio, video {
-		margin: 0;
-		padding: 0;
-		border: 0;
-		font-size: 100%;
-		font: inherit;
-		vertical-align: baseline;
-	}
-	/* HTML5 display-role reset for older browsers */
-	article, aside, details, figcaption, figure, 
-	footer, header, hgroup, menu, nav, section {
-		display: block;
-	}
-	body {
-		line-height: 1;
-	}
-	ol, ul {
-		list-style: none;
-	}
-	blockquote, q {
-		quotes: none;
-	}
-	blockquote:before, blockquote:after,
-	q:before, q:after {
-		content: '';
-		content: none;
-	}
-	table {
-		border-collapse: collapse;
-		border-spacing: 0;
-	}
-
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>title</title>
+  <meta name="author" content="Stephan Bogner">
+  <meta name="description" content="Unravel the streets of Berlin">
+  <link rel="stylesheet" type="text/css" href="reset.css">
+  <script
+  src="https://code.jquery.com/jquery-3.1.1.min.js"
+  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+  crossorigin="anonymous"></script>
+  <style type="text/css">
 	body{
 		padding-top: 70px;
 		font-family: 'Lato', sans-serif;
@@ -64,109 +28,145 @@
 		font-size: 1.2rem;
 	}
 
+	#interface{
+		text-transform: uppercase;
+		font-size: 0.7rem;
+		color: black;
+		margin-left: 100px;
+	}
+
+	input{
+		margin-right: 20px;
+		margin-left: 5px;
+	}
+
 	a{
 		text-transform: uppercase;
 		font-size: 0.7rem;
 		color: black;
 		text-decoration: none;
-		margin-left:  100px;
 		opacity: 0.3;
 		transition: 0.3s;
+	}
+
+	#console{
+		font-size: 0.7rem;
+		color: black;
+		margin-left: 100px;
+		padding-top: 10px;
+		line-height: 0.9rem;
 	}
 
 	a:hover{
 		opacity: 1;
 	};
-</style>
 
-<script
-  src="https://code.jquery.com/jquery-3.1.1.min.js"
-  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-  crossorigin="anonymous"></script>
-  <div>
-  	<h1>Berlin's roads have a combined length of 5341,7 km</h1>
-  	<h2>What you see are all roads stitched together*</h2>
-  	<h3>*One pixel equals <span id="mPerPixel">???</span> m</h3>
-  	<a id="downloadFile">(Download .svg)</a>
-  </div>
-  
-<div id="svgWrapper"></div>
-
-<script type="text/javascript">
-	var numberOfSlopes = 600;
-	var slopeWidth = 1000;
-	var slopeHeight = 5;
-	var offsetX = 100;
-	var offsetY = 100;
-	var arrayOfSvgPieces = [];
-
-	var lengthOfStreetsInBerlin = 5341.7;
-	var lengthInPixels = numberOfSlopes * ( slopeWidth*2 + slopeHeight*2 );
 	
-	var kmPerPixel = lengthOfStreetsInBerlin/lengthInPixels;
+</style>
+  </head>
+  <body>
+  	<div>
+		<h1>Berlin's roads have a combined length of 5341,7 km</h1>
+		<h2>What you see are all roads stitched together*</h2>
+		<h3>*One pixel equals <span id="mPerPixel">???</span> m</h3>
+	</div>
 
-	console.log("lengthOfStreetsInBerlin", lengthOfStreetsInBerlin);
-	console.log("lengthInPixels", lengthInPixels);
-	console.log("-> kmPerPixel", kmPerPixel);
-	console.log("-> mPerPixel", kmPerPixel*1000);
-	$('#mPerPixel').html( Math.round(kmPerPixel*10000)/10 )
+	<div id="interface">
+		Number of Slopes
+		<input type="number" id="numberOfSlopes">
 
-	var svgWidth = offsetX + slopeWidth + offsetX;
-	var svgHeight = offsetY + (slopeHeight * numberOfSlopes * 2) + offsetY;
+		Slope Width
+		<input type="number" id="slopeWidth">
 
-	console.log("svgHeight", svgHeight)
+		Slope Height
+		<input type="number" id="slopeHeight">
+		<a id="downloadFile">(Download .svg)</a>
+	</div>
+	<div id="console"></div>
+	  
+	<div id="svgWrapper"></div>
+	<script type="text/javascript">
+		var numberOfSlopes = 600;
+		var slopeWidth = 1000;
+		var slopeHeight = 5;
+		var offsetX = 100;
+		var offsetY = 100;
 
-	arrayOfSvgPieces.push('<svg width="' + svgWidth + 'px" height="' + svgHeight +'px"  viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '">')
-	arrayOfSvgPieces.push('<path stroke="#979797" stroke-width="1" fill="none" d="');
+		$('#numberOfSlopes').val(numberOfSlopes);
+		$('#slopeWidth').val(slopeWidth);
+		$('#slopeHeight').val(slopeHeight);
 
-	arrayOfSvgPieces.push('M' + offsetX + ',' + offsetY);
+		var lengthOfStreetsInBerlin = 5341.7;
 
-	var pointCounter = 0;
-	for (var i = 0; i < numberOfSlopes*2; i += 2) {
-		var y1 = i * slopeHeight + slopeHeight * 0 + offsetY;
-		var y2 = i * slopeHeight + slopeHeight * 1 + offsetY;
-		var y3 = i * slopeHeight + slopeHeight * 2 + offsetY;
-		var xRightEnd = offsetX + slopeWidth
-		var xLeftEnd = offsetX
+		createSvg(numberOfSlopes, slopeWidth, slopeHeight);
 
-		// pointCounter ++;
-		// arrayOfSvgPieces.push('x' + pointCounter + '="' + xLeftEnd + '" y' + pointCounter + '="' + y1 + '"');
-		// pointCounter ++;
-		// arrayOfSvgPieces.push('x' + pointCounter + '="' + xRightEnd + '" y' + pointCounter + '="' + y1 + '"');
-		// pointCounter ++;
-		// arrayOfSvgPieces.push('x' + pointCounter + '="' + xRightEnd + '" y' + pointCounter + '="' + y2 + '"');
-		// pointCounter ++;
-		// arrayOfSvgPieces.push('x' + pointCounter + '="' + xLeftEnd + '" y' + pointCounter + '="' + y2 + '"');
-		// pointCounter ++;
-		// arrayOfSvgPieces.push('x' + pointCounter + '="' + xLeftEnd + '" y' + pointCounter + '="' + y3 + '"');
+		function createSvg(numberOfSlopes, slopeWidth, slopeHeight){
 
+			var lengthInPixels = numberOfSlopes * ( slopeWidth*2 + slopeHeight*2 );
+		
+			var kmPerPixel = lengthOfStreetsInBerlin/lengthInPixels;
 
-		// arrayOfSvgPieces.push('L ' + xLeftEnd  + ' ' + y1);
-		// arrayOfSvgPieces.push('L ' + xRightEnd + ' ' + y1);
-		// arrayOfSvgPieces.push('L ' + xRightEnd + ' ' + y2);
-		// arrayOfSvgPieces.push('L ' + xLeftEnd  + ' ' + y2);
-		// arrayOfSvgPieces.push('L ' + xLeftEnd  + ' ' + y3);
+			console.log("lengthOfStreetsInBerlin", lengthOfStreetsInBerlin);
+			console.log("lengthInPixels", lengthInPixels);
+			console.log("-> kmPerPixel", kmPerPixel);
+			console.log("-> mPerPixel", kmPerPixel*1000);
+			$('#mPerPixel').html( Math.round(kmPerPixel*10000)/10 )
 
-		arrayOfSvgPieces.push('l' + slopeWidth  + ',' + 0);
-		arrayOfSvgPieces.push('l' + 0 + ',' + slopeHeight);
-		arrayOfSvgPieces.push('l' + (-slopeWidth) + ',' + 0);
-		arrayOfSvgPieces.push('l' + 0  + ',' + slopeHeight);
-	};
-	arrayOfSvgPieces.push('" />');
-	arrayOfSvgPieces.push('</svg>');
+			var arrayOfSvgPieces = [];
+			var svgWidth = parseInt(offsetX) + parseInt(slopeWidth) + parseInt(offsetX);
+			var svgHeight = offsetY + (slopeHeight * numberOfSlopes * 2) + offsetY;
 
-	var svgCode = arrayOfSvgPieces.join("");
-	$( "#svgWrapper" ).append( svgCode );
-	//console.log(svgCode);
+			$('#console').html(slopeWidth + " x " + (slopeHeight * numberOfSlopes * 2) + " px <br>Ratio: " + Math.round(slopeWidth/(slopeHeight * numberOfSlopes * 2)*10000)/10000 + "<br>(e.g. DIN = 0.7071)");
 
+			arrayOfSvgPieces.push('<svg width="' + svgWidth + 'px" height="' + svgHeight +'px"  viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '">')
+			arrayOfSvgPieces.push('<path stroke="#979797" stroke-width="1" fill="none" d="');
 
-	var fileName = "streets_" + numberOfSlopes + "_slopes_w" + slopeWidth + "_h" + slopeHeight + ".svg";
-	download(fileName, svgCode);
+			arrayOfSvgPieces.push('M' + offsetX + ',' + offsetY);
 
-	function download(filename, text) {
-	  var element = document.getElementById('downloadFile');
-	  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-	  element.setAttribute('download', filename);
-	}
-</script>
-<link href="https://fonts.googleapis.com/css?family=Lato:300,400" rel="stylesheet">
+			var pointCounter = 0;
+			for (var i = 0; i < numberOfSlopes*2; i += 2) {
+				var y1 = i * slopeHeight + slopeHeight * 0 + offsetY;
+				var y2 = i * slopeHeight + slopeHeight * 1 + offsetY;
+				var y3 = i * slopeHeight + slopeHeight * 2 + offsetY;
+				var xRightEnd = offsetX + slopeWidth
+				var xLeftEnd = offsetX
+
+				arrayOfSvgPieces.push('l' + slopeWidth  + ',' + 0);
+				arrayOfSvgPieces.push('l' + 0 + ',' + slopeHeight);
+				arrayOfSvgPieces.push('l' + (-slopeWidth) + ',' + 0);
+				arrayOfSvgPieces.push('l' + 0  + ',' + slopeHeight);
+			};
+			arrayOfSvgPieces.push('" />');
+			arrayOfSvgPieces.push('</svg>');
+
+			var svgCode = arrayOfSvgPieces.join("");
+			$("#svgWrapper").html( svgCode );
+
+			var fileName = "streets_" + numberOfSlopes + "_slopes_w" + slopeWidth + "_h" + slopeHeight + ".svg";
+			download(fileName, svgCode);
+		}
+
+		function download(filename, text) {
+		  var element = document.getElementById('downloadFile');
+		  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+		  element.setAttribute('download', filename);
+		}
+
+		$("#numberOfSlopes").on("change keyup paste click", function(){
+			numberOfSlopes = $("#numberOfSlopes").val();
+			createSvg(numberOfSlopes, slopeWidth, slopeHeight);
+		})
+
+		$("#slopeWidth").on("change keyup paste click", function(){
+			slopeWidth = $("#slopeWidth").val();
+			createSvg(numberOfSlopes, slopeWidth, slopeHeight);
+		})
+
+		$("#slopeHeight").on("change keyup paste click", function(){
+			slopeHeight = $("#slopeHeight").val();
+			createSvg(numberOfSlopes, slopeWidth, slopeHeight);
+		})
+	</script>
+	<link href="https://fonts.googleapis.com/css?family=Lato:300,400" rel="stylesheet">
+  </body>
+</html>
