@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Pack .svg files</title>
+	<meta name="author" content="Stephan Bogner">
+	<script src="util/pathsegpolyfill.js"></script>
+	<script src="util/matrix.js"></script>
+	<script src="util/domparser.js"></script>
+	<script src="util/clipper.js"></script>
+	<script src="util/parallel.js"></script>
+	<script src="util/geometryutil.js"></script>
+	<script src="util/placementworker.js"></script>
+	<script src="util/async.js"></script>
+	<script src="svgparser.js"></script>
+	<script src="svgnest.js"></script>
+	<script src="util/filesaver.js"></script>
+	<style type="text/css">
+		body{
+			font-family: 'Inconsolata', monospace;
+			margin: 0;
+			padding: 0;
+		}
+
+		section{
+			color: white;
+			box-sizing: border-box;
+			padding: 50px 70px;
+			width: 100vw;
+			height: 100vh;
+		}
+
+		#selectFiles{
+			background: #50E3C2;
+		}
+
+		#status{
+			background: #4990E2;
+			display: none;
+		}
+
+		#filePicker{
+			display: none;
+		}
+
+		#forFilePicker, #restart{
+			padding-bottom: 2px;
+		}
+
+		#forFilePicker:hover, #restart:hover{
+			cursor: pointer;
+			border-bottom: 2px solid white;
+		}
+
+		#bins{
+			opacity: 0;
+		}
+
+		#restart{
+			display: none;
+		}
+	</style>
+</head>
+<body>
+	<section id="selectFiles">
+		<h1 id="dropzone">Drop .svg files here</h1>
+		<input id="filePicker" type="file" multiple />
+		<label id="forFilePicker" for="filePicker">Or choose a file ...</label>
+	</section>
+	<section id="status">
+		<h1 id="state"></h1>
+		<div id="progress"></div>
+		<div id="bins"></div>
+		<label id="restart">Restart</label>
+	</section>
+	<script
+	src="https://code.jquery.com/jquery-3.1.1.min.js"
+	integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+	crossorigin="anonymous"></script>
+
+	<script type="text/javascript">
+	var fileCounter;
+	var globalSvgs;
+	var isworking = false;
+	var bin;
+	var binClassSelector = "bin";
+	var configuration = {
+		spacing: 0,
+		curveTolerance: 0.3,
+		rotations: 1,
+		populationSize: 10,
+		mutationRate: 10,
+		useHoles: false,
+		exploreConcave: false
+	}
+
+	var currentImage = "";
+
+	$('#selectFiles').on(
+	    'dragover',
+	    function(e) {
+	    	$('#dropzone').html('Drop now');
+	        e.preventDefault();
+	        e.stopPropagation();
+	    }
+	)
+	$('#selectFiles').on(
+	    'dragenter',
+	    function(e) {
+	    	$('#dropzone').html('Drop now');
+	        e.preventDefault();
+	        e.stopPropagation();
+	    }
+	)
+	$('#filePicker').on( "change", function(){
+		files = $(this)[0].files;
+
+		console.log(files);
+		workFiles(files);
+	});
+
+	$('#selectFiles').on('drop', function(event) {
+		$('#dropzone').html('Drop .svg files here');
+
+		 event.preventDefault();
+		 var files = event.originalEvent.dataTransfer.files;
+
+		 console.log(files);
+		 workFiles(files);
+	 });
+
+	$('#restart').on('click', function(event) {
+		$('#selectFiles').show();
+		$('#status').hide();
+		$('#restart').hide();
+	});
+
+	function workFiles(files){
+		fileCounter = 0;
+		$('#state').html("Loading files");
+		$('#selectFiles').hide();
+		$('#status').show();
+
+		var counter = 0;
+		async.mapSeries(files, function(file, callback) {
+			counter ++;
+			console.log('Processing file ' + file.name);
+			readFile(file,callback);
+		}, function(err, svgs) {
+			if( err ) {
+				console.log('A file failed to process');
+			} else {
+				globalSvgs = svgs;
+				console.log(svgs);
+				console.log('All files have been read - start packing now');
+				pack(globalSvgs[fileCounter]);
+				// async.mapSeries(svgs, function(svg, callback) {
+				// 	$('#state').html("Packing");
+				// 	counter ++;
+				// 	currentImage = counter + "/" + svgs.length + " — " + svg.name;
+				// 	pack(svg.svg.target.result, renderSvg);
+				// }, function(err, results){
+				// 	console.log("all files packed");
+				// });	
+			}
+		});
+	}
+
+	function pad(num, size) {
+	    var s = num+"";
+	    while (s.length < size) s = "0" + s;
+	    return s;
+	}
+
+	function readFile(file, callback){
+		if( file.length > 32 ) {
+			console.log('This file name is too long');
+			callback(null, null);
+		} else {
+			var reader = new FileReader();
+
+			reader.onload = (function(theFile) {
+				return function(e) {
+					console.log(file.name + " loaded");
+					file.svg = e;
+					callback(null, file);
+				};
+			})(file);
+			reader.readAsText(file);
+		}
+	}
+
+
+	function pack(svg){
+		svgPlainText = svg.svg.target.result
+		bin = null;
+		var svg = window.SvgNest.parsesvg( svgPlainText );
+		var xmlDoc = $.parseXML( svgPlainText );
+		$(xmlDoc).find('.' + binClassSelector).each(function () {
+			bin = $(this)[0];
+		});
+
+		if (bin == null) {
+			console.log('Could not find an bin element with class "' + binClassSelector + '" in your svg');
+		}else{
+			console.log('Starting now');
+			SvgNest.setbin(bin);
+			window.SvgNest.config(configuration);
+			iterations = 0;
+			console.log('Starting now');
+			//if(isworking){
+			//	console.log('Starting now');
+			//	stopnest();
+			// }
+			// else{
+			startnest();
+			//}
+		}
+	}
+
+
+	function startnest(){
+		console.log("Startnest");
+		SvgNest.start(progress, renderSvg);
+		//renderSvg
+		//isworking = true;
+	}
+
+
+	function stopnest(){
+		SvgNest.stop();
+		isworking = false;
+	}
+
+
+	function progress(percent){
+	//console.log(percent);
+	$('#progress').html( (fileCounter + 1) +" / " + globalSvgs.length + " — " + globalSvgs[fileCounter].name + " — " + Math.round(percent*1000)/10 + "%");
+}
+
+var iterations = 0;
+var maxIterations = 1;
+
+function renderSvg(svglist, efficiency, numplaced){
+	console.log("Rendering");
+	$('#progress').html( (fileCounter + 1) +" / " + globalSvgs.length + " — " + globalSvgs[fileCounter].name + " — 100%");
+	iterations++;
+	
+	if(!svglist || svglist.length == 0){
+		return;
+	}
+
+
+	var bins = document.getElementById('bins');
+	bins.innerHTML = '';
+	
+	for(var i=0; i<svglist.length; i++){
+		if(svglist.length > 2){
+			svglist[i].setAttribute('class','grid');
+		}
+		bins.appendChild(svglist[i]);
+	}
+
+	var blob = new Blob([bins.innerHTML], {type: "image/svg+xml;charset=utf-8"});
+	saveAs(blob, getNameFromNumber(fileCounter) + ".svg");
+	
+	console.log(fileCounter)
+	fileCounter ++;
+	if (fileCounter < globalSvgs.length) {
+		stopnest();
+		pack(globalSvgs[fileCounter]);
+	}else{
+		console.log('all done');
+		$('#restart').show();
+	}
+
+	
+	
+
+	if (iterations >= maxIterations) {
+		stopnest();
+	};
+}
+
+function getNameFromNumber(number){
+	var halfNumber = Math.floor(number/2);
+	var value = pad(halfNumber, 3);
+	if (number % 2 != 0) {
+		value += "m"
+	};
+	return value;
+}
+
+</script>
+</body>
+<link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet">
+</html>
+
+
+
+
+
+
+
