@@ -61,6 +61,9 @@
 		#restart{
 			display: none;
 		}
+		#select{
+			display: none;
+		}
 	</style>
 </head>
 <body>
@@ -73,6 +76,7 @@
 		<h1 id="state"></h1>
 		<div id="progress"></div>
 		<div id="bins"></div>
+		<div id="select"></div>
 		<label id="restart">Restart</label>
 	</section>
 	<script
@@ -87,7 +91,7 @@
 	var bin;
 	var binClassSelector = "bin";
 	var configuration = {
-		spacing: 0,
+		spacing: 5,
 		curveTolerance: 0.3,
 		rotations: 1,
 		populationSize: 10,
@@ -263,8 +267,9 @@ function renderSvg(svglist, efficiency, numplaced){
 		bins.appendChild(svglist[i]);
 	}
 
-	var blob = new Blob([bins.innerHTML], {type: "image/svg+xml;charset=utf-8"});
-	saveAs(blob, getNameFromNumber(fileCounter) + ".svg");
+	download();
+	//var blob = new Blob([bins.innerHTML], {type: "image/svg+xml;charset=utf-8"});
+	//saveAs(blob, getNameFromNumber(fileCounter) + ".svg");
 	
 	console.log(fileCounter)
 	fileCounter ++;
@@ -282,6 +287,41 @@ function renderSvg(svglist, efficiency, numplaced){
 	if (iterations >= maxIterations) {
 		stopnest();
 	};
+}
+
+
+function download(){
+	var display = document.getElementById('select');
+	var bins = document.getElementById('bins');
+	
+	if(bins.children.length == 0){
+		alert('No SVG to export');
+	}else{
+		var svg;
+		svg = display.querySelector('svg');
+		
+		if(!svg){
+			svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+		}
+		
+		svg = svg.cloneNode(false);
+		
+		var binHeight = parseInt(bins.children[0].getAttribute('height'));
+		
+		for(i=0; i<bins.children.length; i++){
+			var b = bins.children[i];
+			var group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+			group.setAttribute('transform', 'translate(0 '+binHeight*1.1*i+')');
+			for(var j=0; j<b.children.length; j++){
+				group.appendChild(b.children[j].cloneNode(true));
+			}
+			
+			svg.appendChild(group);
+		}
+		
+		var blob = new Blob([svg.outerHTML], {type: "image/svg+xml;charset=utf-8"});
+		saveAs(blob, getNameFromNumber(fileCounter) + ".svg");
+	}
 }
 
 function getNameFromNumber(number){
