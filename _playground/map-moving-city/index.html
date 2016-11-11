@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title></title>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v0.25.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v0.25.1/mapbox-gl.css' rel='stylesheet' />
+    <script type="text/javascript" src="https://npmcdn.com/@turf/turf@3.5.1/turf.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.7/d3.min.js"></script>
+</head>
+<style type="text/css">
+#map {
+    width: 100%;
+    height: 700px;
+}
+</style>
+
+<body>
+    <div id='map'></div>
+    <script type="text/javascript">
+    // pk.eyJ1Ijoiam9leWtsZWUiLCJhIjoiMlRDV2lCSSJ9.ZmGAJU54Pa-z8KvwoVXVBw
+
+    mapboxgl.accessToken = 'pk.eyJ1Ijoiam9leWtsZWUiLCJhIjoiMlRDV2lCSSJ9.ZmGAJU54Pa-z8KvwoVXVBw';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v9',
+        center: [13.412339, 52.502296],
+        zoom: 10
+    });
+
+    // add your things below
+    // var points = turf.random('points', 500, {
+    //   bbox: [13.149261474609375,
+    //      52.63639665997182, 13.660125732421875,
+    //      52.376437538867776]
+    // });
+
+
+
+    function Particle(name, coords) {
+        var _this = this;
+        _this.name = name;
+        // coords is the flattened array for 1 road
+        // _this.coords = coords;
+        _this.counter = 0;
+
+        _this.point = {
+            "type": "FeatureCollection",
+            "features": [{
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": coords[0]
+                }
+            }]
+        }
+
+        map.addSource(_this.name, {
+            "type": "geojson",
+            "data": _this.point
+        });
+
+        map.addLayer({
+            "id": _this.name,
+            "source": _this.name,
+            "type": "circle",
+            "paint": {
+                "circle-radius": 10,
+                "circle-color": "#007cbf"
+            }
+        });
+
+
+        function animate(){
+            if (_this.counter < coords.length -1) {
+                _this.point.features[0].geometry.coordinates = coords[_this.counter];
+                 map.getSource(_this.name).setData(_this.point);    
+            
+                requestAnimationFrame(animate);
+                _this.counter = _this.counter+1;
+            }else{
+                _this.counter = 0;
+                requestAnimationFrame(animate);
+                // console.log(_this.counter)
+            }
+            
+        }
+        animate(_this.counter);
+        
+
+
+    }
+
+    map.on('load', function() {
+
+        d3.json('test.geojson', function(obj) {
+            // console.log(obj);
+            var particles = [];
+
+            for (var i = 100; i < 120; i++) {
+                particles.push(new Particle("point" + i, obj[i]));
+            }
+
+
+            // For adding 50,000 random points and the street network 
+            // map.addSource("points", {
+            //     "type": "geojson",
+            //     "data": points,
+            //     "cluster": true,
+            //     "clusterRadius": 3
+            // });
+            // map.addLayer({
+            //     "id": "points",
+            //     "source": "points",
+            //     "type": "circle",
+            //     "paint": {
+            //         "circle-radius": 3,
+            //         "circle-color": "#007cbf"
+            //     }
+            // });
+
+            // map.addSource("streetsGen1", {
+            //  "type": "geojson",
+            //  "data": "./berlin_roads_gen1.geojson"
+            // });
+            // map.addLayer({
+            //     "id": "streets",
+            //  "type": "line",
+            //     "source": "streetsGen1",
+            //     "layout": {
+            //                 "line-join": "round",
+            //                 "line-cap": "round"
+            //             },
+            //             "paint": {
+            //                 "line-color": "#888",
+            //                 "line-width": 2
+            //             }
+            // });
+        });
+
+
+    })
+
+    // for each road:
+    // + sort the road coordinates by longitude or latitude
+    // + then for each road "drive" a car along the road at a random point along the line
+    // + when the "car" drives to the end of the line, then turn around
+    // + or at some point allow the car to drive onto a road which intersects it
+    </script>
+</body>
+
+</html>
