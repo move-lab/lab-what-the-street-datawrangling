@@ -1,0 +1,13 @@
+
+{
+  "name": "add-name-property-to-mongodb",
+  "version": "0.0.1",
+  "description": "Adds a name tag to mongodb in order to index it",
+  "author": "Stephan Bogner <stephan.bogner@moovel.com>",
+  "dependencies": {
+    "mongodb": "2.2.10",
+    "minimist": "1.2.0"
+  },
+  "devDependencies": {
+  }
+}
