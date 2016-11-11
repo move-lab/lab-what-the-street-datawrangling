@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <style>
+
+    path {
+      fill: none;
+      stroke-width: 1px;
+      stroke-linejoin: round;
+      stroke-dasharray: 8,11;
+      border-style: ;
+    }
+
+    .state {
+      stroke: #777;
+    }
+
+  </style>
+</head>
+<body>
+<div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+<script src="simplify.js"></script>
+<script>
+
+var width = 1260,
+    height = 3000,
+    boundary = 100,
+    blowup = 1,
+    speed = 1,
+    zoomfactor = 2;
+
+var streetheight = blowup*100;
+
+var svg = d3.select("body").append("svg")
+  .attr("width", width)
+  .attr("height", height);
+
+var line = d3.svg.line();
+
+// Top point
+var rotation = 0; //-Math.PI / 12;
+var turnflag = 1;
+var ydelta = 0;
+var ydeltabase = 0;
+var yprev = 0;
+
+d3.json("mdhannoversche.geojson",function(err,md){
+
+  // http://bl.ocks.org/mbostock/4707858
+  var projection = d3.geo.conicConformal();
+  projection
+    .scale(1)
+    .translate([0,0]);
+  var pth = d3.geo.path()
+    .projection(projection);
+
+  var b = pth.bounds(md),
+      s = blowup * .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height),
+      t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1]))];
+  projection
+      .scale(s)
+      .translate(t);
+
+  // Project to screen x/y
+  var border = md.features[0].geometry.coordinates[0].map(projection),
+      vertices = simplify(border, blowup*2000);
+
+  // Find out first point
+  t_new = [t[0]-vertices[0][0]+boundary, t[1]-vertices[0][1]+boundary];
+  projection
+    .scale(s)
+    .translate(t_new);
+
+  // Reproject
+  border = md.features[0].geometry.coordinates[0].map(projection);
+  vertices = simplify(border, blowup*2000);
+  console.log(vertices)
+  // vertices = interpolate(vertices);
+  console.log(vertices)
+  groups = getGroups(border, vertices);
+          
+  var state = svg.append("path")
+    .attr("class", "state")
+    .datum(border)
+    .attr("d", line);
+
+  setTimeout(zoomin, 1000/speed);
+  setTimeout(unroll, (2000)/speed);
+
+
+  function zoomin() {
+    state.transition()
+      .duration(1000/speed)
+      .style("stroke-width", 2 + "px")
+      .attr("transform", "translate(" + [-boundary*(zoomfactor-1),-boundary*(zoomfactor-1)] + ") scale(" + zoomfactor + ")");
+  }
+
+  function interpolate(vertices) {
+    vertices_new = []
+    vprev = [100,100]
+    i = 0;
+    vertices.forEach(function(v) {
+      if (Math.sqrt( (v[0]-vprev[0])*(v[0]-vprev[0]) + (v[1]-vprev[1])*(v[1]-vprev[1]) ) > 100) { // if euclidean distance between points larger than 100, cut in half
+        vinter = [vprev[0] + 0.5*(v[0]-vprev[0]), vprev[1] + 0.5*(v[1]-vprev[1])]
+        vertices_new.push(vinter);
+      }
+      vprev = v;
+      vertices_new.push(v);
+    });
+    return vertices_new;
+  }
+
+  function unroll() {
+
+    var next = groups.shift(),
+        angle = shortest(getAngle(next.anchor, next.end) + rotation);
+
+
+    // Reset original points for tweening
+    border.forEach(function(p, i){
+      p.original = i < next.start[2] ? null : p.slice(0,2);
+    });
+
+    state.transition()
+      .delay(50/speed)
+      .duration(200/speed)
+      .attrTween("d",function(){
+
+        // Update path with partial rotation
+        return function(t) {
+
+          var rotate = rotator(t * angle, next.anchor);
+
+          border.forEach(rotate);
+
+          return line(border);
+
+        };
+
+      })
+      .each("end",function(){
+
+        // Snake line
+        if (next.end[0] >= (width-boundary)/zoomfactor && turnflag == 1) { // one turn downwards on right side
+          rotation = rotation - Math.PI/2;
+          ydelta += next.end[1] - yprev;
+          yprev = next.end[1];
+          turnflag += 1;
+        } else if  (next.end[0] >= (width-boundary)/zoomfactor && turnflag == 2) { // turn to left
+          ydelta += next.end[1] - yprev;
+          yprev = next.end[1];
+          if (ydelta >= streetheight) {
+            turnflag += 1;
+            ydeltabase = ydeltabase + ydelta;
+            ydelta = 0;
+            rotation = rotation - Math.PI/2;
+          }
+        } else if (next.end[0] <= boundary && turnflag == 3) { // one turn downwards on left side
+          rotation = rotation + Math.PI/2;
+          ydelta += next.end[1] - yprev;
+          yprev = next.end[1];
+          turnflag += 1;
+        }  else if (next.end[0] <= boundary  && turnflag == 4) { // turn to right
+          ydelta += next.end[1] - yprev;
+          yprev = next.end[1];
+          if (ydelta >= streetheight) {
+            turnflag = 1;
+            ydeltabase = ydeltabase + ydelta;
+            ydelta = 0;
+            rotation = rotation + Math.PI/2;
+          }
+        }
+
+        console.log(next.end[0], next.end[1])
+        if (groups.length) {
+          unroll();
+        }
+
+      });
+
+  }
+
+});
+
+// Turn into groups of anchor point, first point to rotate, last point to rotate
+function getGroups(border, vertices) {
+
+  return vertices.slice(1).map(function(v, i){
+
+    return {
+      start: i ? border[vertices[i][2] + 1] : border[0],
+      end: v,
+      anchor: vertices[i]
+    };
+
+  });
+
+}
+
+// Return function to modify point in place based on rotation from its original x/y
+// (Using .original for tweening)
+function rotator(angle, anchor) {
+
+  var cx = anchor[0],
+      cy = anchor[1],
+      cos = Math.cos(angle),
+      sin = Math.sin(angle);
+
+  return function(point, i) {
+
+    var x,
+        y,
+        x2,
+        y2;
+
+    if (point.original) {
+      x = point.original[0];
+      y = point.original[1];
+      x2 = (cos * (x - cx)) + (sin * (y - cy)) + cx;
+      y2 = (cos * (y - cy)) - (sin * (x - cx)) + cy;
+
+      point[0] = x2;
+      point[1] = y2;
+    }
+
+  };
+
+}
+
+// Take the shorter angle
+function shortest(angle) {
+
+  while (angle < -Math.PI) {
+    angle += 2 * Math.PI;
+  }
+
+  while (angle > Math.PI) {
+    angle -= 2 * Math.PI;
+  }
+
+  return angle;
+
+}
+
+function getAngle(a, b) {
+
+  return Math.atan2(b[1] - a[1], b[0] - a[0]);
+
+}
+
+</script>
+</body>
+</html>
