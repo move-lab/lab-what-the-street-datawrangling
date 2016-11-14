@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>title</title>
+	<meta name="author" content="Stephan Bogner">
+	<meta name="description" content="Unravel the streets of Berlin">
+	<link rel="stylesheet" type="text/css" href="reset.css">
+	<script type="text/javascript" src="jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" src="papaparse.min.js"></script>
+
+	<style type="text/css">
+	body{
+		padding-top: 70px;
+		font-family: 'Lato', sans-serif;
+	}
+
+	h1,h2, h3{
+		margin-left:  100px;
+		margin-bottom: 10px;
+		font-size: 2rem;
+		font-weight: 300;
+	}
+	h3{
+		margin-top: 25px;
+		font-size: 1.2rem;
+	}
+
+	a{
+		text-transform: uppercase;
+		font-size: 0.7rem;
+		color: black;
+		text-decoration: none;
+		opacity: 0.3;
+		transition: 0.3s;
+	}
+
+	a:hover{
+		opacity: 1;
+	};
+
+	
+	</style>
+</head>
+<body>
+	<div>
+		<h1>Berlin's roads have a combined length of 5341,7 km</h1>
+		<h2>What you see are all roads stitched together</h2>
+	</div>
+
+	<div id="svgWrapper"></div>
+	<script type="text/javascript">
+	var colors = {
+		'motorway'		: '#4990E2',
+		'trunk'			: '#00B7BF',
+		'primary'		: '#50E3C2',
+		'secondary'		: '#D0011B',
+		'tertiary'		: '#D17402',
+		'unclassified'	: '#F6A623',
+		'residential'	: '#5B5B5B',		
+		'default'		: '#D8D8D8'
+	}
+
+	var laneThickness = {
+		'motorway'		: 3.50,
+		'trunk'			: 3.50,
+		'primary'		: 3,
+		'secondary'		: 2.75,
+		'tertiary'		: 2.75,
+		'unclassified'	: 2.75,
+		'residential'	: 2.75,
+		'default'		: 2.75
+	}
+
+	var laneMargin = {
+		'motorway'		: 2,
+		'trunk'			: 2,
+		'primary'		: 1.75,
+		'secondary'		: 1,
+		'tertiary'		: 1,
+		'unclassified'	: 1,
+		'residential'	: 1,
+		'default'		: 1
+	}
+
+	var rowLengthInMeter = 400;
+	var widthInPixel = 800;
+	var meterPerPixel = rowLengthInMeter / widthInPixel;
+	var scale = widthInPixel / rowLengthInMeter;
+	var url = "residential_streets_withNames.csv";
+	var arrayOfSvgPieces = [];
+
+	Papa.parse(url, {
+		download: true,
+		header: true,
+		complete: function(results) {
+			console.log(results);
+			var ways = results.data;
+
+			rows = calculate(ways);
+			generateSvg(rows);
+			
+		}
+	});
+
+	function generateSvg(rows){
+		var offsetX = 20;
+		var offsetY = 20;
+		var svgWidth = parseInt(widthInPixel + 5) * scale;
+		var svgHeight = 10000 * scale;
+		arrayOfSvgPieces.push('<svg width="' + svgWidth + 'px" height="' + svgHeight +'px"  viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '">');
+
+		for (var rowCounter = 0; rowCounter < rows.length; rowCounter++) {
+			var row = rows[ rowCounter ]
+			for (var segmentCounter = 0; segmentCounter < row.length; segmentCounter++) {
+				var segment = row[ segmentCounter ];
+				console.log( segment );
+				var color = colors[segment.way.highway] || colors['default'];
+				var thickness = laneThickness[segment.way.highway] || laneThickness['default'];
+				var margin = laneMargin[segment.way.highway] || laneMargin['default'];
+				var width = thickness * segment.way.lanes + margin;
+				console.log(width)
+
+				arrayOfSvgPieces.push('<path stroke="' + color + '" stroke-width="' + width + '" fill="none" d="');
+				arrayOfSvgPieces.push('M' + (offsetX + scale * segment.from.x) + ',' + (offsetY + scale * segment.from.y));
+				arrayOfSvgPieces.push('L' + (offsetX + scale * segment.to.x) + ',' + (offsetY + scale * segment.to.y));
+				arrayOfSvgPieces.push('"/>');
+			};
+			console.log("");
+		};
+		arrayOfSvgPieces.push('" />');
+		arrayOfSvgPieces.push('</svg>');
+
+
+
+		var svgCode = arrayOfSvgPieces.join("");
+
+		console.log(arrayOfSvgPieces);
+		$("#svgWrapper").html( svgCode );
+	}
+
+	function calculate(ways){
+		var currentLengthOfThisRow = 0;
+		var rows = [];
+		var currentRow = 0;
+		rows[currentRow] = [];
+		
+		//		var way = ways[26];
+
+		for (var wayCounter = 0; wayCounter < ways.length; wayCounter ++) {
+			console.log(wayCounter)
+			var way = ways[ wayCounter ]
+			way.length = parseFloat(way.length);
+			var remainingLengthOfThisRow = rowLengthInMeter - currentLengthOfThisRow;
+
+			if (way.length > remainingLengthOfThisRow) {
+				//console.log('Will switch to next row');
+
+				var remainingLengthToWorkWith = way.length - remainingLengthOfThisRow;
+
+				//First segment until curve
+				var fromX = currentLengthOfThisRow;
+				var toX = rowLengthInMeter;
+				var fromY = getY(currentRow);
+				var toY = getY(currentRow);
+				var infoForDrawing = {
+					from:{
+						x: fromX,
+						y: fromY
+					},
+					to:{
+						x: toX,
+						y: toY
+					},
+					way: way
+				}
+				rows[currentRow].push( infoForDrawing );
+				console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+
+				//Full rows with that one street
+				var numberOfFullRows = Math.floor(remainingLengthToWorkWith / rowLengthInMeter);
+				for (var i = 0; i < numberOfFullRows; i++) {
+					switchToNextRow();
+					var fromX = 0;
+					var toX = rowLengthInMeter;
+					var fromY = getY(currentRow);
+					var toY = getY(currentRow);
+					var infoForDrawing = {
+						from:{
+							x: fromX,
+							y: fromY
+						},
+						to:{
+							x: toX,
+							y: toY
+						},
+						way: way
+					}
+					rows[currentRow].push( infoForDrawing );
+					console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+				};
+
+				//Last Bit
+				switchToNextRow();
+				var lastPieceLength = remainingLengthToWorkWith - numberOfFullRows * rowLengthInMeter;
+				currentLengthOfThisRow = lastPieceLength;
+				var fromX = 0;
+				var toX = lastPieceLength;
+				var fromY = getY(currentRow);
+				var toY = getY(currentRow);
+				var infoForDrawing = {
+					from:{
+						x: fromX,
+						y: fromY
+					},
+					to:{
+						x: toX,
+						y: toY
+					},
+					way: way
+				}
+				rows[currentRow].push( infoForDrawing );
+				console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+			}else{
+				//console.log('Stays in the same row');
+
+				var fromX = currentLengthOfThisRow;
+				var toX = currentLengthOfThisRow + way.length;
+				var fromY = getY(currentRow);
+				var toY = getY(currentRow);
+				var infoForDrawing = {
+					from:{
+						x: fromX,
+						y: fromY
+					},
+					to:{
+						x: toX,
+						y: toY
+					},
+					way: way
+				}
+				rows[currentRow].push( infoForDrawing );
+				currentLengthOfThisRow += way.length;
+				console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+			}
+
+			function switchToNextRow(){
+				console.log('row' + currentRow);
+				currentLengthOfThisRow = 0;
+				currentRow += 1
+				rows[currentRow] = [];
+			}
+		}
+		return rows;
+	};
+
+	
+
+	function getY(row){
+		return row * 10;
+	}
+
+		</script>
+		<link href="https://fonts.googleapis.com/css?family=Lato:300,400" rel="stylesheet">
+	</body>
+	</html>
