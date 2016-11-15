@@ -3,11 +3,12 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<title>title</title>
+	<title>Roads of Berlin</title>
 	<meta name="author" content="Stephan Bogner">
 	<meta name="description" content="Unravel the streets of Berlin">
 	<link rel="stylesheet" type="text/css" href="reset.css">
 	<script type="text/javascript" src="jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" src="jquery-scrollto.js"></script>
 	<script type="text/javascript" src="papaparse.min.js"></script>
 
 	<style type="text/css">
@@ -16,7 +17,7 @@
 		font-family: 'Lato', sans-serif;
 	}
 
-	h1,h2, h3{
+	h1, h2, h3{
 		margin-left:  100px;
 		margin-bottom: 10px;
 		font-size: 2rem;
@@ -38,18 +39,32 @@
 
 	a:hover{
 		opacity: 1;
-	};
+	}
 
+	#bottom{
+		position: fixed;
+		bottom: 30px;
+		right: 30px;
+		text-align: right;
+		font-size: 3rem;
+	}
+
+	#bottom:hover{
+		cursor: pointer;
+	}
 	
 	</style>
 </head>
 <body>
 	<div>
-		<h1>Berlin's roads have a combined length of 5341,7 km</h1>
-		<h2>What you see are all roads stitched together</h2>
+		<h1>Berlin's roads have a combined length of <span id="berlinLength">???,?</span> km</h1>
+		<h2>This are all roads stitched together into <span id="rowNumber">???</span> rows*</h2>
+		<h3>*One pixel equals <span id="mPerPixel">???</span> m</h3>
 	</div>
 
 	<div id="svgWrapper"></div>
+	<div id="conclusion" style="text-align:center">Thanks for scrolling</div>
+	<div id="bottom">⏬</div>
 	<script type="text/javascript">
 	var colors = {
 		'motorway'		: '#4990E2',
@@ -84,59 +99,73 @@
 		'default'		: 1
 	}
 
+	var entireLength = 0;
 	var rowLengthInMeter = 400;
 	var widthInPixel = 800;
 	var meterPerPixel = rowLengthInMeter / widthInPixel;
+
+	$("#mPerPixel").html( Math.round(meterPerPixel * 10) / 10 );
+	$('#bottom').on('click', function(){scrollToEnd()})
+
 	var scale = widthInPixel / rowLengthInMeter;
 	var url = "residential_streets_withNames.csv";
 	var arrayOfSvgPieces = [];
 
-	Papa.parse(url, {
-		download: true,
-		header: true,
-		complete: function(results) {
-			console.log(results);
-			var ways = results.data;
+	start();
 
-			rows = calculate(ways);
-			generateSvg(rows);
-			
-		}
-	});
+	function start(){
+		Papa.parse(url, {
+			download: true,
+			header: true,
+			complete: function(results) {
+				console.log(results);
+				var ways = results.data;
+
+				rows = calculate(ways);
+				console.log("rows", rows.length);
+				
+
+				$("#berlinLength").html( Math.round(entireLength/100)/10 )
+				generateSvg(rows);
+				
+			}
+		});
+	}
+
+	function scrollToEnd(){
+		$('#conclusion').ScrollTo({
+		    duration: 30000,
+		    durationMode: 'all'
+		});
+	}
 
 	function generateSvg(rows){
 		var offsetX = 20;
 		var offsetY = 20;
 		var svgWidth = parseInt(widthInPixel + 5) * scale;
-		var svgHeight = 10000 * scale;
+		var svgHeight = getY(rows.length) * scale + offsetY + 5;
+		$("#rowNumber").html(rows.length)
 		arrayOfSvgPieces.push('<svg width="' + svgWidth + 'px" height="' + svgHeight +'px"  viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '">');
 
 		for (var rowCounter = 0; rowCounter < rows.length; rowCounter++) {
 			var row = rows[ rowCounter ]
 			for (var segmentCounter = 0; segmentCounter < row.length; segmentCounter++) {
 				var segment = row[ segmentCounter ];
-				console.log( segment );
 				var color = colors[segment.way.highway] || colors['default'];
 				var thickness = laneThickness[segment.way.highway] || laneThickness['default'];
 				var margin = laneMargin[segment.way.highway] || laneMargin['default'];
 				var width = thickness * segment.way.lanes + margin;
-				console.log(width)
 
 				arrayOfSvgPieces.push('<path stroke="' + color + '" stroke-width="' + width + '" fill="none" d="');
 				arrayOfSvgPieces.push('M' + (offsetX + scale * segment.from.x) + ',' + (offsetY + scale * segment.from.y));
 				arrayOfSvgPieces.push('L' + (offsetX + scale * segment.to.x) + ',' + (offsetY + scale * segment.to.y));
 				arrayOfSvgPieces.push('"/>');
 			};
-			console.log("");
 		};
 		arrayOfSvgPieces.push('" />');
 		arrayOfSvgPieces.push('</svg>');
 
-
-
 		var svgCode = arrayOfSvgPieces.join("");
-
-		console.log(arrayOfSvgPieces);
 		$("#svgWrapper").html( svgCode );
 	}
 
@@ -145,13 +174,10 @@
 		var rows = [];
 		var currentRow = 0;
 		rows[currentRow] = [];
-		
-		//		var way = ways[26];
-
 		for (var wayCounter = 0; wayCounter < ways.length; wayCounter ++) {
-			console.log(wayCounter)
 			var way = ways[ wayCounter ]
 			way.length = parseFloat(way.length);
+			entireLength += way.length;
 			var remainingLengthOfThisRow = rowLengthInMeter - currentLengthOfThisRow;
 
 			if (way.length > remainingLengthOfThisRow) {
@@ -176,7 +202,7 @@
 					way: way
 				}
 				rows[currentRow].push( infoForDrawing );
-				console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+				//console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
 
 				//Full rows with that one street
 				var numberOfFullRows = Math.floor(remainingLengthToWorkWith / rowLengthInMeter);
@@ -198,7 +224,7 @@
 						way: way
 					}
 					rows[currentRow].push( infoForDrawing );
-					console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+					//console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
 				};
 
 				//Last Bit
@@ -221,7 +247,7 @@
 					way: way
 				}
 				rows[currentRow].push( infoForDrawing );
-				console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+				//console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
 			}else{
 				//console.log('Stays in the same row');
 
@@ -242,11 +268,11 @@
 				}
 				rows[currentRow].push( infoForDrawing );
 				currentLengthOfThisRow += way.length;
-				console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
+				//console.log('Draw from ' + fromX + ',' + fromY + ' to ' + toX + ',' + toY);
 			}
 
 			function switchToNextRow(){
-				console.log('row' + currentRow);
+				//console.log('row' + currentRow);
 				currentLengthOfThisRow = 0;
 				currentRow += 1
 				rows[currentRow] = [];
@@ -258,7 +284,7 @@
 	
 
 	function getY(row){
-		return row * 10;
+		return row * 6;
 	}
 
 		</script>
