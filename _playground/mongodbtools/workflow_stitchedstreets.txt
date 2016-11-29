@@ -11,7 +11,7 @@ Overpass
 
 Get all street names:
 -) Download city osm.bz2 file from geofabrik
--) ./osmfilter berlin-latest.osm --keep="highway=residential =primary =secondary =tertiary =unclassified" --drop="public_transport=stop_position highway=traffic_signals" --ignore-dependencies > temp.osm
+-) ./osmfilter berlin/berlin_cropped.osm --keep="highway=residential =primary =secondary =tertiary =unclassified" --drop="public_transport=stop_position public_transport=platform public_transport man_made leisure highway=traffic_signals railway=station entrance=yes barrier=gate barrier" --ignore-dependencies > temp.osm
 -) ./osmconvert temp.osm --all-to-nodes --csv="name" > temp.csv
 -) sort -u temp.csv > streetnames.txt
 
