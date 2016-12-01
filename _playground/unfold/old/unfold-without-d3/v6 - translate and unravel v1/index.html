@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Unravel</title>
+  </head>
+  <body>
+        <canvas id="myCanvas" width="1500" height="1500"></canvas>
+        <style type="text/css">
+          body{
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+
+          canvas{
+            /*background: white;*/
+            position: absolute;
+            top: 0;
+            left: 0;
+          }
+
+          #sliderSmooth{
+            position: absolute;
+            top: 20px;
+            left: 20px;
+          }
+
+        </style>
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
+
+        <script>
+            var urlToJson = "./data/Achillesstraße.json"
+            $.getJSON( urlToJson, function( json ) {
+                  console.log(json);
+                  var tags = json.tags;
+                  var componentsWithCoordinates = convertToCoordinates(json);
+                  var routesToUnrollFeatureCollection = getRoutesToUnroll(componentsWithCoordinates);
+                  addTranslationInformation(routesToUnrollFeatureCollection);
+                  
+
+                  var componentsVectors = convertToVectors(routesToUnrollFeatureCollection);
+                  //addTranslationInformationToVector(componentsVectors);
+                  //add angle differences
+                  for (var i = 0; i < componentsVectors.length; i++) {
+                    addAngleDifferences(componentsVectors[i]);
+                  };
+                  
+
+                  console.log(componentsVectors);
+
+                  //drawStreets(routesToUnrollFeatureCollection);
+                  
+
+                  var frameCounter = 0;
+                  //window.setInterval(moveBitch, 100);
+                  moveBitch();
+
+
+                  function moveBitch(){
+                        var percentage = (Math.sin(frameCounter/8) + 1)/2;
+                        var nullLatLon = componentsVectors[0][0].origin;
+                        //drawStreetsWithTranslation(routesToUnrollFeatureCollection, percentage);
+                        var canvas = document.getElementById("myCanvas"); //reference canvas
+                        var canvasContext = canvas.getContext("2d"); //set context
+                        canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+
+                        var smooth = (-Math.sin(frameCounter/8) + 1) * 1 + 1
+
+                        for (var i = 0; i < componentsVectors.length; i++) {
+                          instantUnfold(componentsVectors[i], smooth, percentage);
+                          drawLegs(componentsVectors[i], nullLatLon);
+                        };
+
+                        for (var i = 0; i < componentsVectors.length; i++) {
+                          addTranslationInformationToVector(componentsVectors);
+                        };
+                        
+                        frameCounter ++; 
+                  }
+            });
+
+            function convertToVectors(geoJson){
+              var components = [];
+              var features = geoJson.features;
+              for (var i = 0; i < features.length; i++) {
+                var feature = features[i];
+                var legs = getLegsFromCoordinates( feature.geometry.coordinates );
+                components.push(legs);
+              };
+              return components;
+            }
+
+            function drawLegs(legs, nullLatLon){
+              var canvas = document.getElementById("myCanvas"); //reference canvas
+              var canvasContext = canvas.getContext("2d"); //set context
+
+              var distanceBetweenComponents = turf.lineDistance( turf.lineString([legs[0].origin, nullLatLon]));
+              var bearingBetweenComponents = toRadians(turf.bearing( turf.point(nullLatLon), turf.point(legs[0].origin)));
+
+              var marginLeft = 100;
+              var marginTop = 100;
+              //var currentX =  Math.sin(bearingBetweenComponents) * convertDistanceToPixels(distanceBetweenComponents) 
+               + marginLeft;
+              //var currentY = -Math.cos(bearingBetweenComponents) * convertDistanceToPixels(distanceBetweenComponents) + marginTop;
+
+              console.log(legs)
+              currentX = legs[0].translate[0];
+              currentY = legs[0].translate[1];
+
+              //canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+              canvasContext.beginPath(); 
+              canvasContext.moveTo(currentX, currentY);
+
+              var startAngle = 0;
+              var currentAngle = startAngle;
+
+              for (var i = 0; i < legs.length; i++) {
+                var leg = legs[i];
+                currentAngle += leg.currentAngleDifference;
+                var dx = Math.sin( toRadians( currentAngle) ) * convertDistanceToPixels( leg.length );
+                var dy = -Math.cos( toRadians( currentAngle) ) * convertDistanceToPixels( leg.length );
+                //leg.positionFrom = [currentX, currentY];
+                currentX += dx;
+                currentY += dy;
+                //leg.positionTo = [currentX, currentY];
+                canvasContext.lineTo(currentX, currentY);
+              };
+
+              canvasContext.stroke();
+              canvasContext.closePath();
+            }
+
+            function addTranslationInformationToVector(components){
+              console.log(components)
+              for (var i = 0; i < components.length; i++) {
+                var componentTest = components[i];
+                var componentFirstLeg = componentTest[0]
+                console.log('component', componentTest);
+                if (i == 0) {
+                  console.log('-----')
+                  console.log('firstleg', componentFirstLeg)
+                  console.log('from', componentFirstLeg['positionFrom'][0])
+                  console.log('-----')
+                  componentFirstLeg.translate = [0,0];
+                }else{
+                  //var previousComponent = components[i-1];
+                  console.log('-----')
+                  console.log('firstleg', componentFirstLeg)
+                  console.log('from', componentFirstLeg['positionFrom'][0])
+                  console.log('-----')
+                }
+                //   component[0].translate = [];
+                //   console.log( component )
+                //   component[0].translate[0] = component[0].from[0] - previousComponent[previousComponent.length - 1].from[0];
+                //   component[0].translate[1] = component[0].from[1] - previousComponent[previousComponent.length - 1].from[1];
+                // }
+              };
+            }
+
+            function instantUnfold(legs, smoothness, percentage){
+              for (var i = 0; i < legs.length; i++) {                  
+                if (i==0) {
+                  legs[i].currentAngleDifference = 90 + between(percentage, 0, getAngleDifference(legs[i].startAngleDifference, 90));
+                }else{
+                  legs[i].currentAngleDifference = legs[i].startAngleDifference / smoothness;  
+                }
+              };
+              //updateTailInformation(legs);
+            }
+
+
+            // function updateTailInformation(legs){
+            //   var startAngle = 0;
+            //   var currentAngle = startAngle;
+
+            //   for (var i = 0; i < legs.length; i++) {
+            //     var leg = legs[i];
+            //     currentAngle += leg.currentAngleDifference;
+            //     var dx = Math.sin( toRadians( currentAngle) ) * convertDistanceToPixels( leg.length );
+            //     var dy = -Math.cos( toRadians( currentAngle) ) * convertDistanceToPixels( leg.length );
+            //     currentX += dx;
+            //     currentY += dy;
+            //     canvasContext.lineTo(currentX, currentY);
+            //   };
+            // }
+
+            function between(percentage, value1, value2){
+              var diff = value2 - value1;
+              var result = value1 + diff * percentage;
+              return result;
+            }
+
+            function convertDistanceToPixels(kilometers){
+              //return kilometers * 1370; //equals zoom level 16
+              return kilometers * 200;
+            }
+
+            function getLegsFromCoordinates(coordinates){
+              var legs = [];
+              for (var i = 1; i < coordinates.length; i++) {
+                var coordinateFrom = coordinates[i - 1];
+                var coordinateTo   = coordinates[i];
+                var pointFrom = turf.point( coordinateFrom );
+                var pointTo   = turf.point( coordinateTo );
+                var bearing   = turf.bearing(pointFrom, pointTo);
+                var angleDistance = bearing;
+                if (i > 1) {
+                  angleDistance = legs[i-2].angleDistance - bearing;
+                };
+                var distance  = turf.distance(pointFrom, pointTo, "kilometers");
+
+                //head distance is the accumulated distance of the graph which came before
+                var headDistance = distance;
+                if (i > 1) {
+                  headDistance = distance + legs[i-2].headDistance;
+                };
+
+                var leg = {
+                  //"this": i,
+                  //"taken": i-1,
+                  // "from":{
+                  //   "lat": coordinateFrom[1],
+                  //   "lon": coordinateFrom[0]
+                  // },
+                  // "to":{
+                  //   "lat": coordinateTo[1],
+                  //   "lon": coordinateTo[0]
+                  // },
+                  "angle": bearing,
+                  "length": distance
+                }
+
+                if (i == 1) {
+                  leg.origin = coordinateFrom
+                };
+
+                legs.push(leg);
+              };
+              return legs;
+            }
+
+            function addAngleDifferences(legs) {
+              for (var i = 0; i < legs.length; i++) {
+                var leg = legs[i];
+                if (i > 0) {
+                  var previousLeg = legs[i-1];  
+                  legs[i].startAngleDifference = (leg.angle - previousLeg.angle); //woah, that is super messy ...
+                  while (legs[i].startAngleDifference < -180) {
+                    legs[i].startAngleDifference += 360;
+                  };
+                  while (legs[i].startAngleDifference > 180) {
+                    legs[i].startAngleDifference -= 360;
+                  };
+                  legs[i].headDistance = leg.length + previousLeg.headDistance;
+                }else{
+                  //console.log("first leg, using initial values");
+                  legs[i].startAngleDifference = leg.angle;
+                  legs[i].headDistance = leg.length;
+                }
+                legs[i].currentAngleDifference = legs[i].startAngleDifference;
+              };
+            }
+
+            function getAngleDifference(angle1, angle2){
+              var d = angle1 - angle2
+               while (d < -180) {
+                  d += 360;
+                };
+                while (d > 180) {
+                  d -= 360;
+                };
+              return d;
+            }
+
+            function addTranslationInformation(routesToUnrollFeatureCollection){
+                  var features = routesToUnrollFeatureCollection.features;
+                  console.log("previousFeature")
+                  for (var i = 0; i < features.length; i++) {
+                        var feature = features[i];
+                        
+                        if (i == 0) {
+                              //feature.properties.headAfterUnravel = feature.geometry.coordinates[ 0 ];
+                              feature.properties.tailAfterUnravel = feature.geometry.coordinates[ feature.geometry.coordinates.length - 1 ];
+                              feature.properties.translate = [0, 0];
+                        }else{
+                              var previousFeature = features[i-1];
+                              var previousFeatureTail = previousFeature.properties.tailAfterUnravel;
+                              var previousFeatureCoordinates = previousFeature.geometry.coordinates;
+                              var lastCoord = feature.geometry.coordinates[ feature.geometry.coordinates.length-1 ];
+                              var currentCord = feature.geometry.coordinates[0];
+                              feature.properties.translate = [
+                                    previousFeatureTail[0] - currentCord[0],
+                                    previousFeatureTail[1] - currentCord[1]
+                              ];
+
+                              // feature.properties.headAfterUnravel = feature.geometry.coordinates[
+                              //       0,0
+                              // ];
+                              feature.properties.tailAfterUnravel = [
+                                    lastCoord[0] + feature.properties.translate[0],
+                                    lastCoord[1] + feature.properties.translate[1]
+                              ]
+                        }
+                        
+                  }
+            }
+
+            function drawStreetsWithTranslation(routesToUnrollFeatureCollection, percentage){
+                  var scale = 40000;
+                  
+                  var canvas = document.getElementById("myCanvas"); //reference canvas
+                  var canvasContext = canvas.getContext("2d"); //set context
+
+                  canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+                  canvasContext.beginPath();
+
+                  var features = routesToUnrollFeatureCollection.features;
+
+                  var startX = 30;
+                  var startY = 30;
+                  var offsetX = - features[0].geometry.coordinates[0][0]*scale + startX;
+                  var offsetY = features[0].geometry.coordinates[0][1]*scale + startY;
+                  for (var i = 0; i < features.length; i++) {
+                        var feature = features[i];
+                        var coords = feature.geometry.coordinates;
+                        var translate = feature.properties.translate;
+                        
+                        for (var j = 0; j < coords.length; j++) {
+
+                              var coord = coords[j];
+                              if (j == 0) {
+                                    canvasContext.moveTo(
+                                          offsetX + coord[0]*scale + translate[0]*percentage*scale, 
+                                          offsetY - coord[1]*scale - translate[1]*percentage*scale);
+                              }else{
+                                    canvasContext.lineTo(
+                                          offsetX + coord[0]*scale + translate[0]*percentage*scale, 
+                                          offsetY - coord[1]*scale - translate[1]*percentage*scale);
+                              }
+                        };
+                  };
+
+                  canvasContext.stroke();
+                  canvasContext.closePath();
+            }
+
+            function getAngleToNormalize(legs){
+              //console.log(legs);
+              var dx = 0;
+              var dy = 0;
+              var currentAngle = 0;
+              for (var i = 0; i < legs.length; i++) {
+                var leg = legs[i];
+                currentAngle += leg.currentAngleDifference;
+                var dxc = Math.sin( toRadians( currentAngle) ) * convertDistanceToPixels( leg.length );
+                var dyc = -Math.cos( toRadians( currentAngle) ) * convertDistanceToPixels( leg.length );
+                dx += dxc;
+                dy += dyc;
+              };
+              var theta = Math.atan(dy/dx);
+              theta = toDegrees(theta)
+              //console.log('dx', dx, 'dy', dy, 'angle', theta);
+              return legs[0].currentAngleDifference = 90 - theta;
+            }
+
+            function drawStreets(routesToUnrollFeatureCollection){
+                  var scale = 20;
+                  var offsetX = 0;
+                  var offsetY = 0;
+                  var canvas = document.getElementById("myCanvas"); //reference canvas
+                  var canvasContext = canvas.getContext("2d"); //set context
+
+                  canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+                  canvasContext.beginPath();
+
+                  var features = routesToUnrollFeatureCollection.features;
+                  for (var i = 0; i < features.length; i++) {
+                        var feature = features[i];
+                        var coords = feature.geometry.coordinates;
+                        for (var j = 0; j < coords.length; j++) {
+                              var coord = coords[j];
+                              if (j == 0) {
+                                    canvasContext.moveTo(offsetX + coord[0]*scale, offsetY - coord[1]*scale);
+                              }else{
+                                    canvasContext.lineTo(offsetX + coord[0]*scale, offsetY - coord[1]*scale);
+                              }
+                        };
+                  };
+                  canvasContext.stroke();
+                  canvasContext.closePath();
+            }
+
+
+            function convertToCoordinates(json){
+                  var components = json.components;
+                  var nodeLUT = json.nodes;
+                  var componentsWithCoordinates = [];
+                  for (var componentCounter = 0; componentCounter < components.length; componentCounter++) {
+                        var component = components[ componentCounter ];
+                        componentsWithCoordinates[componentCounter] = [];
+                        for (var i = 0; i < component.length; i++) {
+                              var componentPiece = component[i]
+                              componentsWithCoordinates[componentCounter][i] = [];
+                              for (var j = 0; j < componentPiece.length; j++) {
+                                    var componentNode = componentPiece[j];
+                                    componentsWithCoordinates[componentCounter][i][j] = nodeLUT[componentNode];
+                              };
+                        };
+                  };
+                  return componentsWithCoordinates;
+            }
+
+            function getRoutesToUnroll(componentsWithCoordinates){
+                  var lineStrings = [];
+                  for (var i = 0; i < componentsWithCoordinates.length; i++) {
+                        var component = componentsWithCoordinates[i];
+                        for (var j = 0; j < component.length; j++) {
+                              var segments = component[j];
+                              var coordinates = [];
+                              for (var k = 0; k < segments.length; k++) {
+                                    var coordinate = segments[k];
+                                    coordinates.push([coordinate.lon, coordinate.lat])
+                              };
+                              lineStrings.push( turf.lineString( coordinates ) );
+                        };
+                  };
+                  return turf.featureCollection(lineStrings);
+            }
+
+            function toRadians(degrees) {
+              return degrees * Math.PI / 180;
+            };
+             
+            function toDegrees(radians) {
+              return radians * 180 / Math.PI;
+            };
+
+
+            function map_range(value, low1, high1, low2, high2) {
+                  return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+            }
+        </script>
+  </body>
+</html>

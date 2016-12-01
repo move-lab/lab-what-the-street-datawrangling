@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Unravel</title>
+  </head>
+  <body>
+        <canvas id="myCanvas" width="1500" height="1500"></canvas>
+        <style type="text/css">
+          body{
+            margin: 0;
+            padding: 0;
+            background: white;
+          }
+
+          canvas{
+            /*background: white;*/
+            position: absolute;
+            top: 0;
+            left: 0;
+          }
+
+          #sliderSmooth{
+            position: absolute;
+            top: 20px;
+            left: 20px;
+          }
+
+        </style>
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
+
+        <script>
+            var urlToJson = "./data/Achillesstraße.json"
+            $.getJSON( urlToJson, function( json ) {
+                  console.log(json);
+                  var tags = json.tags;
+                  var componentsGeoJson = convertToCoordinates(json);
+                  var routesToUnrollFeatureCollection = getRoutesToUnroll(componentsGeoJson);
+                  console.log(componentsGeoJson);
+                  
+
+                  addTranslationInformation(routesToUnrollFeatureCollection)
+                  console.log(routesToUnrollFeatureCollection);
+
+                  //drawStreets(routesToUnrollFeatureCollection);
+                  
+
+                  var frameCounter = 0;
+                  window.setInterval(moveBitch, 100);
+                  //moveBitch();
+
+
+                  function moveBitch(){
+                        var percentage = (Math.sin(frameCounter/6) + 1)/2;
+                        drawStreetsWithEase(routesToUnrollFeatureCollection, percentage);
+                        frameCounter ++; 
+                  }
+            });
+
+            function addTranslationInformation(routesToUnrollFeatureCollection){
+                  var features = routesToUnrollFeatureCollection.features;
+                  console.log("previousFeature")
+                  for (var i = 0; i < features.length; i++) {
+                        var feature = features[i];
+                        
+                        if (i == 0) {
+                              //feature.properties.headAfterUnravel = feature.geometry.coordinates[ 0 ];
+                              feature.properties.tailAfterUnravel = feature.geometry.coordinates[ feature.geometry.coordinates.length - 1 ];
+                              feature.properties.translate = [0, 0];
+                        }else{
+                              var previousFeature = features[i-1];
+                              var previousFeatureTail = previousFeature.properties.tailAfterUnravel;
+                              var previousFeatureCoordinates = previousFeature.geometry.coordinates;
+                              var lastCoord = feature.geometry.coordinates[ feature.geometry.coordinates.length-1 ];
+                              var currentCord = feature.geometry.coordinates[0];
+                              feature.properties.translate = [
+                                    previousFeatureTail[0] - currentCord[0],
+                                    previousFeatureTail[1] - currentCord[1]
+                              ];
+
+                              // feature.properties.headAfterUnravel = feature.geometry.coordinates[
+                              //       0,0
+                              // ];
+                              feature.properties.tailAfterUnravel = [
+                                    lastCoord[0] + feature.properties.translate[0],
+                                    lastCoord[1] + feature.properties.translate[1]
+                              ]
+                        }
+                        
+                  }
+            }
+
+            function drawStreetsWithEase(routesToUnrollFeatureCollection, percentage){
+                  var scale = 40000;
+                  
+                  var canvas = document.getElementById("myCanvas"); //reference canvas
+                  var canvasContext = canvas.getContext("2d"); //set context
+
+                  canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+                  canvasContext.beginPath();
+
+                  var features = routesToUnrollFeatureCollection.features;
+
+                  var marginLeft = 30;
+                  var marginTop = 30;
+                  var offsetX = - features[0].geometry.coordinates[0][0]*scale + marginLeft;
+                  var offsetY = features[0].geometry.coordinates[0][1]*scale + marginTop;
+                  for (var i = 0; i < features.length; i++) {
+                        var feature = features[i];
+                        var coords = feature.geometry.coordinates;
+                        var translate = feature.properties.translate;
+                        
+                        for (var j = 0; j < coords.length; j++) {
+
+                              var coord = coords[j];
+                              if (j == 0) {
+                                    canvasContext.moveTo(
+                                          offsetX + coord[0]*scale + translate[0]*percentage*scale, 
+                                          offsetY - coord[1]*scale - translate[1]*percentage*scale);
+                                    console.log(
+                                          offsetX + coord[0]*scale + translate[0]*percentage*scale, 
+                                          offsetY - coord[1]*scale - translate[1]*percentage*scale)
+                              }else{
+                                    canvasContext.lineTo(
+                                          offsetX + coord[0]*scale + translate[0]*percentage*scale, 
+                                          offsetY - coord[1]*scale - translate[1]*percentage*scale);
+                              }
+                        };
+                  };
+
+                  canvasContext.stroke();
+                  canvasContext.closePath();
+            }
+
+            function drawStreets(routesToUnrollFeatureCollection){
+                  var scale = 20;
+                  var offsetX = 0;
+                  var offsetY = 0;
+                  var canvas = document.getElementById("myCanvas"); //reference canvas
+                  var canvasContext = canvas.getContext("2d"); //set context
+
+                  canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+                  canvasContext.beginPath(); 
+
+                  var features = routesToUnrollFeatureCollection.features;
+                  for (var i = 0; i < features.length; i++) {
+                        var feature = features[i];
+                        var coords = feature.geometry.coordinates;
+
+                        
+                        for (var j = 0; j < coords.length; j++) {
+                              var coord = coords[j];
+                              if (j == 0) {
+                                    canvasContext.moveTo(offsetX + coord[0]*scale, offsetY - coord[1]*scale);
+                              }else{
+                                    canvasContext.lineTo(offsetX + coord[0]*scale, offsetY - coord[1]*scale);
+                              }
+                        };
+                  };
+
+                  canvasContext.stroke();
+                  canvasContext.closePath();
+            }
+
+
+            function convertToCoordinates(json){
+                  var components = json.components;
+                  var nodeLUT = json.nodes;
+                  var componentsGeoJson = [];
+                  for (var componentCounter = 0; componentCounter < components.length; componentCounter++) {
+                        var component = components[ componentCounter ];
+                        componentsGeoJson[componentCounter] = [];
+                        for (var i = 0; i < component.length; i++) {
+                              var componentPiece = component[i]
+                              componentsGeoJson[componentCounter][i] = [];
+                              for (var j = 0; j < componentPiece.length; j++) {
+                                    var componentNode = componentPiece[j];
+                                    componentsGeoJson[componentCounter][i][j] = nodeLUT[componentNode];
+                              };
+                        };
+                  };
+                  return componentsGeoJson;
+            }
+
+            function getRoutesToUnroll(componentsGeoJson){
+                  var lineStrings = [];
+                  for (var i = 0; i < componentsGeoJson.length; i++) {
+                        var component = componentsGeoJson[i];
+                        for (var j = 0; j < component.length; j++) {
+                              var segments = component[j];
+                              var coordinates = [];
+                              for (var k = 0; k < segments.length; k++) {
+                                    var coordinate = segments[k];
+                                    coordinates.push([coordinate.lon, coordinate.lat])
+                              };
+                              lineStrings.push( turf.lineString( coordinates ) );
+                        };
+                  };
+                  return turf.featureCollection(lineStrings);
+            }
+
+
+            function map_range(value, low1, high1, low2, high2) {
+                  return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+            }
+        </script>
+  </body>
+</html>

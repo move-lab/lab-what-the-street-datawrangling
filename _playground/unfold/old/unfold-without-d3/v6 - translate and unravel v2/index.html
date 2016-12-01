@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Unravel</title>
+  </head>
+  <body>
+    <canvas id="myCanvas" width="1500" height="1500"></canvas>
+    <style type="text/css">
+    canvas{
+      background: orange;
+      margin: 30px;
+    }
+    </style>
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
+        <script type="text/javascript" src="./js/async.min.js"></script>
+        <script>
+            var urlToJson = "./data/Achillesstraße.json"
+            var canvas = document.getElementById("myCanvas"); //reference canvas
+            var canvasContext = canvas.getContext("2d"); //set context
+
+            $.getJSON( urlToJson, function( json ) {
+              console.log('json', json);
+
+              var jsonWithCoordinates = convertToCoordinates(json);
+              console.log('jsonWithCoordinates', jsonWithCoordinates);
+
+              var jsonWithVectors = convertToVectors(jsonWithCoordinates);
+              addTranslationInformation( jsonWithVectors );
+              addBearingDelta( jsonWithVectors );
+              console.log('jsonWithVectors', jsonWithVectors);
+
+              //clearCanvas();
+              drawLegs(jsonWithVectors);
+              drawLegsUnravelled(jsonWithVectors, 1.7);
+            });
+
+            function convertToVectors(json){
+              //One street = multiple graphs, if split by gap
+              var components = json.components;
+              var vectorComponents = [];
+              for (var i = 0; i < components.length; i++) {
+                //one component = one graph
+                var component = components[i];
+                vectorComponents[i] = [];
+                var vectorComponent = vectorComponents[i];
+
+                for (var j = 0; j < component.length; j++) {
+                  //one path = one line (array of coordinates)
+                  var subComponent = component[j]; //= line
+                  var attributes = {};
+                  attributes.from = subComponent[0];
+                  attributes.to = subComponent[ subComponent.length - 1 ];
+                  attributes.coordinates = subComponent;
+                  attributes.bearings = [];
+                  attributes.distances = [];
+
+                  for (var k = 1; k < subComponent.length; k++) {
+                    //one coordinate = one point
+                    var coordinate = subComponent[k];
+                    var previousCoordinate = subComponent[k - 1];
+                    var from = turf.point([previousCoordinate.lon, previousCoordinate.lat]);
+                    var to = turf.point([coordinate.lon, coordinate.lat]);
+                    var distance = turf.distance(from, to);
+                    var bearing = turf.bearing(from, to);
+                    attributes.distances.push(distance)
+                    attributes.bearings.push(bearing)
+                  };
+                  vectorComponent.push(attributes)
+                };
+              };
+              var output = {
+                tags: json.tags,
+                components: vectorComponents
+              };
+              return output
+            }
+
+            function addBearingDelta(json){
+              var components = json.components;
+              var onlySubComponents = getOnlySubcomponents(components);
+              var counter = 0;
+              var bearings = [];
+
+              //get only bearings
+              for (var i = 0; i < onlySubComponents.length; i++) {
+                var subComponent = onlySubComponents[i];
+                for (var j = 0; j < subComponent.bearings.length; j++) {
+                  var bearing = subComponent.bearings[j];
+                  bearings.push(bearing);
+                }
+              }
+
+              //get d
+              var bearingDeltas = [];
+              for (var i = 0; i < bearings.length; i++) {
+                var bearing = bearings[i];
+                if (i == 0) {
+                  bearingDeltas.push(bearing);
+                }else{
+                  var previousBearing = bearings[i-1];
+                  bearingDeltas.push(getAngleDifference(bearing, previousBearing));
+                }
+              };
+
+              var counter = 0;
+              for (var i = 0; i < components.length; i++) {
+                var subComponents = components[i];
+                for (var j = 0; j < subComponents.length; j++) {
+                  var subComponent = subComponents[j];
+                  subComponent.bearingDelta = [];
+                  for (var k = 0; k < subComponent.bearings.length; k++) {
+                    subComponent.bearingDelta[k] = bearingDeltas[counter];
+                    counter ++;
+                  };
+                };
+              };
+            }
+
+            function addTranslationInformation(json){
+              var components = json.components;
+              var vectorComponents = [];
+              for (var i = 0; i < components.length; i++) {
+                var component = components[i];
+                if (i > 0) {
+                  var previousComponent = components[i - 1];
+                };
+                for (var j = 0; j < component.length; j++) {
+                  var subComponent = component[j];
+                  if (i == 0 && j == 0) { //if first component and first path ...
+                    subComponent.translate = {deltaLon:0, deltaLat:0} //don't move
+                    subComponent.translate.context = "origin";
+                  }else if(j == 0){ //first path
+                    var previousComponentFirstSubComponent = previousComponent[0];
+                    var previousComponentLastSubComponent = previousComponent[previousComponent.length-1];
+                    var dx = subComponent.from.lon - previousComponentLastSubComponent.to.lon;
+                    var dy = subComponent.from.lat - previousComponentLastSubComponent.to.lat;
+                    subComponent.translate = {deltaLon:dx, deltaLat:dy};
+                    subComponent.translate.context = "translate from last component";
+                  }else{
+                    var previousSubComponent = component[j-1];
+                    var dx = subComponent.from.lon - previousSubComponent.from.lon;
+                    var dy = subComponent.from.lat - previousSubComponent.from.lat;
+                    subComponent.translate = {deltaLon:dx, deltaLat:dy};
+                    subComponent.translate.context = "translate from last coordinate" ;
+                  }
+                }
+              }
+            }
+
+            function drawLegs(json){
+              var components = json.components;
+              var onlySubComponents = getOnlySubcomponents(components);
+
+              var origin = onlySubComponents[0].from;
+              var cursor = turf.point([origin.lon, origin.lat]);
+              var bearingCounter = 0;
+              canvasContext.beginPath(); 
+              canvasContext.moveTo(0, 0);
+
+              for (var i = 0; i < onlySubComponents.length; i++) {
+                var subComponent = onlySubComponents[i];
+                var currentOrigin = subComponent.from;
+                var distances = subComponent.distances;
+                var bearings = subComponent.bearings;
+                var bearingDelta = subComponent.bearingDelta;
+                console.log( 'path' + i);
+                console.log(subComponent)
+                console.log(bearingDelta)
+
+                for (var j = 0; j < bearings.length; j++) {
+                  var distance = distances[j];
+                  var currentBearingDelta = bearingDelta[j];
+                  bearingCounter += currentBearingDelta;
+                  
+                  console.log('turf', currentBearingDelta);
+                  cursor = turf.destination(cursor, distance, bearingCounter); //moves it
+                  //console.log(cursor);
+                  
+                  //console.log('');
+                  var x = (cursor.geometry.coordinates[0] - origin.lon) * 10000;
+                  var y = -(cursor.geometry.coordinates[1] - origin.lat) * 10000;
+                  console.log(x, y);
+                  canvasContext.lineTo(x, y);
+                };
+                //console.log(subComponent)
+              };
+              // for (var i = 0; i < components.length; i++) {
+              //   var component = components[i];
+              //   console.log('drawing component' + i);
+              //   for (var j = 0; j < component.length; j++) {
+              //   //for (var j = 0; j < 1; j++) {
+
+              //     if (j == 0) {
+              //       canvasContext.strokeStyle = '#F6A623';
+              //     }else if(j == 1) {
+              //       canvasContext.strokeStyle = '#E10FC8';
+              //     }else if(j == 2) {
+              //       canvasContext.strokeStyle = '#9012FE';
+              //     }else if(j == 3){
+              //       canvasContext.strokeStyle = '#50E3C2';
+              //     }else{
+              //       canvasContext.strokeStyle = '#D0011B';
+              //     }
+              //     var subComponent = component[j];
+              //     // var number = i*components.length + j;
+              //     // console.log('number', number);
+              //     // drawTest(subComponent, number);
+              //     drawLegsTest(subComponent, subComponent.translate.deltaLon, subComponent.translate.deltaLat);
+              //   }
+              // }
+              
+              canvasContext.stroke();
+              canvasContext.closePath();
+            }
+
+            function drawLegsUnravelled(json, xFactor){
+              console.log('start');
+              var components = json.components;
+              var onlySubComponents = getOnlySubcomponents(components);
+
+
+              var origin = onlySubComponents[0].from;
+              console.log('origin', origin);
+              var cursor = turf.point([origin.lon, origin.lat]);
+              console.log('cursor', cursor);
+              var bearingCounter = 0;
+              canvasContext.beginPath(); 
+              var StartX = 400;
+              var StartY = 400;
+              canvasContext.moveTo(StartX, StartY);
+
+
+              for (var i = 0; i < onlySubComponents.length; i++) {
+                var subComponent = onlySubComponents[i];
+                var currentOrigin = subComponent.from;
+                var distances = subComponent.distances;
+                var bearings = subComponent.bearings;
+                var bearingDelta = subComponent.bearingDelta;
+                console.log( 'path' + i);
+                console.log(subComponent)
+                console.log(bearingDelta)
+
+                for (var j = 0; j < bearings.length; j++) {
+                  var distance = distances[j];
+                  var currentBearingDelta = bearingDelta[j] / xFactor;
+                  bearingCounter += currentBearingDelta;
+                  
+                  console.log('turf', currentBearingDelta);
+                  cursor = turf.destination(cursor, distance, bearingCounter); //moves it
+                  //console.log(cursor);
+                  
+                  //console.log('');
+                  var x = (cursor.geometry.coordinates[0] - origin.lon) * 10000;
+                  var y = -(cursor.geometry.coordinates[1] - origin.lat) * 10000;
+                  console.log(x, y);
+                  canvasContext.lineTo(StartX + x, StartY + y);
+                };
+                //console.log(subComponent)
+              };
+              // for (var i = 0; i < components.length; i++) {
+              //   var component = components[i];
+              //   console.log('drawing component' + i);
+              //   for (var j = 0; j < component.length; j++) {
+              //   //for (var j = 0; j < 1; j++) {
+
+              //     if (j == 0) {
+              //       canvasContext.strokeStyle = '#F6A623';
+              //     }else if(j == 1) {
+              //       canvasContext.strokeStyle = '#E10FC8';
+              //     }else if(j == 2) {
+              //       canvasContext.strokeStyle = '#9012FE';
+              //     }else if(j == 3){
+              //       canvasContext.strokeStyle = '#50E3C2';
+              //     }else{
+              //       canvasContext.strokeStyle = '#D0011B';
+              //     }
+              //     var subComponent = component[j];
+              //     // var number = i*components.length + j;
+              //     // console.log('number', number);
+              //     // drawTest(subComponent, number);
+              //     drawLegsTest(subComponent, subComponent.translate.deltaLon, subComponent.translate.deltaLat);
+              //   }
+              // }
+              
+              canvasContext.stroke();
+              canvasContext.closePath();
+            }
+
+            function getOnlySubcomponents(components){
+              var returnSubComponents = [];
+              for (var i = 0; i < components.length; i++) {
+                var component = components[i];
+                for (var j = 0; j < component.length; j++) {
+                  var subComponent = component[j];
+                  returnSubComponents.push(subComponent);
+                };
+              };
+              return returnSubComponents;
+            }
+
+            function clearCanvas(){
+              canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+            }
+
+            function drawLegsTest(subComponent, translateX, translateY){
+              var marginLeft = 230;
+              var marginTop = 260;
+              var scale = 10000;
+              var numberOfLegs = subComponent.distances.length;
+              var startingPoint = turf.point([subComponent.from.lon, subComponent.from.lat]);
+              var currentPoint = startingPoint;
+              
+              canvasContext.beginPath(); 
+              var bearingCounter = 0;
+              for (var i = 0; i < numberOfLegs; i++) {
+                var distance = subComponent.distances[i];
+                var bearingDelta = subComponent.bearingDelta[i];
+                bearingCounter += bearingDelta;
+                var currentPoint = turf.destination(currentPoint, distance, bearingCounter);
+                
+                var x = (currentPoint.geometry.coordinates[0] - startingPoint.geometry.coordinates[0] + translateX) * scale + marginLeft;
+                var y = - (currentPoint.geometry.coordinates[1] - startingPoint.geometry.coordinates[1] + translateY) * scale + marginTop;
+                canvasContext.lineTo(x, y);
+              };
+              canvasContext.stroke();
+              canvasContext.closePath();
+            }
+
+            function convertToCoordinates(json){
+                  var components = json.components;
+                  var nodeLUT = json.nodes;
+                  var componentsWithCoordinates = [];
+                  for (var componentCounter = 0; componentCounter < components.length; componentCounter++) {
+                        var component = components[ componentCounter ];
+                        componentsWithCoordinates[componentCounter] = [];
+                        for (var i = 0; i < component.length; i++) {
+                              var componentPiece = component[i]
+                              componentsWithCoordinates[componentCounter][i] = [];
+                              for (var j = 0; j < componentPiece.length; j++) {
+                                    var componentNode = componentPiece[j];
+                                    componentsWithCoordinates[componentCounter][i][j] = nodeLUT[componentNode];
+                              };
+                        };
+                  };
+                  var output = {
+                    tags: json.tags,
+                    components: componentsWithCoordinates
+                  }
+                  return output;
+            }
+
+            function getAngleDifference(angle1, angle2){
+              var d = angle1 - angle2
+               while (d < -180) {
+                  d += 360;
+                };
+                while (d > 180) {
+                  d -= 360;
+                };
+              return d;
+            }
+
+            function toRadians(degrees) {
+              return degrees * Math.PI / 180;
+            };
+             
+            function toDegrees(radians) {
+              return radians * 180 / Math.PI;
+            };
+
+            function map_range(value, low1, high1, low2, high2) {
+                  return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
+            }
+        </script>
+  </body>
+</html>
