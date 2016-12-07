@@ -31,7 +31,7 @@ var coil = (function() {
 
     for (var i = 0; i < coordinateStreets.length; i++) {
       var street = coordinateStreets[i];
-      arrayOfSvgPieces.push('<path stroke="#4990E2" stroke-width="1" fill="none" d="');
+      arrayOfSvgPieces.push('<path stroke="#50E3C2" stroke-width="1" fill="none" d="');
       for (var j = 0; j < street.length; j++) {
         var point = street[j];
 
