@@ -1,50 +1,57 @@
 var unfold = (function() {
-  // Returns coordinates of unfolded street
-  //
-  //   progress: How far animation has 
-  //      From:  0 (start - no change)
-  //      To:    1 (end - fully unfolded and rotated that start- and endpoint are on the same y)
-  function getUnfoldedCoordinates(street, progress, unfoldFactor){
-    var unfoldFactor = 1 + progress * unfoldFactor;
-    var scale = 100;
-
-    var unfoldedStreet = getUnfoldedStreet(street, unfoldFactor, progress, progress);
-    var unfoldedStreetCoordinates = getCoordinatesFromVectors(unfoldedStreet.vectors, unfoldedStreet.origin);
-    var lastCoordinate = unfoldedStreetCoordinates[ unfoldedStreetCoordinates.length - 1 ];
-    var objectBearing = getBearing( street.origin, lastCoordinate );
-    unfoldedStreet.objectBearing = objectBearing;
-    var rotate = -getAngleDifference(unfoldedStreet.objectBearing, 90);
-    return getStreetCoordinates(unfoldedStreet.vectors, scale, rotate * progress);
+  function rotateVectorStreet(vectorStreet, bearing){
+    vectorStreet.vectors[0].deltaBearing += bearing;
   }
 
-  function getStreetCoordinates(vectors, scale, rotation){
-    var output = [];
-    var bearingCounter = rotation;
-    var currentX = 0;
-    var currentY = 0;
-    var previousX = currentX;
-    var previousY = currentY;
+  function setRotationOfVectorStreet(vectorStreet, bearing){
+    vectorStreet.vectors[0].deltaBearing = bearing;
+  }
 
-    var distanceCounter = 0;
-    var kmInPixel = scale; //= 1km
-    var lastBendYTest = 0;
-    var lastAction = "";
+  function getObjectBearing(vectorStreet){
+    var street = getStreetWithCoordinates(vectorStreet);
+    var coordinates = street.coordinates;
+    var lastCoordinate = coordinates[ coordinates.length - 1 ];
+    var objectBearing = getBearing( vectorStreet.origin, lastCoordinate );
+    return objectBearing;
+  }
+
+  function calculateAndSetObjectBearing(vectorStreet){
+    vectorStreet.objectBearing = getObjectBearing(vectorStreet);
+  }
+
+  function getDistanceInPixels(meter, meterPerPixel){
+    return meter * 2 / meterPerPixel; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
+  }
+
+  function getStreetWithCoordinates(vectorStreet){
+    //preparing output
+    var output = JSON.parse( JSON.stringify(vectorStreet) );
+        output.coordinates = [];
+        delete output.vectors;
+        delete output.destination;
+        delete output.objectBearing;
+
+    var vectors = vectorStreet.vectors;
+    var bearingCounter = 0;
+
+    var cursor = output.origin;
+
     for (var i = 0; i < vectors.length; i++) {
       var vector = vectors[i];
       bearingCounter += vector.deltaBearing;
-      distanceCounter += vector.distance;
 
-      //not correct, better use turf.destination() instead
-      var dx = Math.sin(toRadians(bearingCounter)) * vector.distance;
-      var dy = Math.cos(toRadians(bearingCounter)) * vector.distance;
+      if (i == 0) { //First vector
+        output.coordinates.push(cursor);//First coordinate
+      } 
 
-      currentX += dx;
-      currentY -= dy;
-   
-      output.push({distance: distanceCounter, y: currentY});
+      //Move cursor forward
+      cursor = getDestination(cursor, vector.distance, bearingCounter);
+      output.coordinates.push(cursor);
 
-      previousX = currentX;
-      previousY = currentY;
+      if(i == vectors.length - 1){ //Last vector
+        output.destination = cursor; 
+        //Destination will not be the same due to mathematical incorrectness
+      }
     };
     return output;
   }
@@ -65,7 +72,9 @@ var unfold = (function() {
   //      From:  0 (original angle) 
   //      To:    1 (the end of one vector will be the start of another one)
 
-  function getUnfoldedStreet(street, unfold, closeGaps, straightenPathConnections){
+  function getUnfoldedVectorStreet(street, unfold, closeGaps, straightenPathConnections){
+    var output = JSON.parse( JSON.stringify(street) );
+
     closeGaps = 1 - closeGaps;
     straightenPathConnections = 1 - straightenPathConnections;
 
@@ -95,25 +104,23 @@ var unfold = (function() {
       previousVectorType = vector.type;
     };
 
-    var newStreet = {
-      origin: JSON.parse(JSON.stringify(street.origin)),
-      tags: JSON.parse(JSON.stringify(street.tags)),
-      vectors: newVectors
-    }
-    
-    return newStreet;
+
+    output.vectors = newVectors;
+    return output;
   }
 
 
   // Converts coordinates based street into vector based
-  function getVectorLine(street){
+  function getStreetWithVectors(street){
+    // Copy street and remove unnecessary data
+    var output = JSON.parse( JSON.stringify(street) );
+        output.vectors = [];
+        delete output.components;
+        delete output.nodes;
+
     var components = street.components;
     var previousNode;
     var previousBearing;
-
-    var output = {};
-        output.tags = street.tags;
-        output.vectors = [];
 
     for (var c = 0; c < components.length; c++) {
       var component = components[c];
@@ -178,27 +185,6 @@ var unfold = (function() {
   }
 
 
-  // Returns an array containing the coordinates of 
-  function getCoordinatesFromVectors(vectors, origin){
-    var coordinates = [];
-    var bearingCounter = 0;
-
-    //First coordinate
-    var cursor = JSON.parse(JSON.stringify(origin));
-    coordinates.push(cursor);
-
-    for (var i = 0; i < vectors.length; i++) {
-      var vector = vectors[i];
-      bearingCounter += vector.deltaBearing;
-      cursor = getDestination(cursor, vector.distance, bearingCounter);
-
-      coordinates.push(cursor);
-    };
-
-    return coordinates;
-  }
-
-
   // Returns the closest angular difference between two angles (between -180 and 180)
   function getAngleDifference(angle1, angle2){
     var d = angle1 - angle2
@@ -242,9 +228,12 @@ var unfold = (function() {
   };
 
   return {
-    getVectorLine : getVectorLine,
-    getUnfoldedStreet : getUnfoldedStreet,
-    getUnfoldedCoordinates : getUnfoldedCoordinates,
-    getCoordinatesFromVectors : getCoordinatesFromVectors,
+    getObjectBearing : getObjectBearing,
+    rotateVectorStreet : rotateVectorStreet,
+    getDistanceInPixels : getDistanceInPixels,
+    getStreetWithVectors : getStreetWithVectors,
+    getUnfoldedVectorStreet : getUnfoldedVectorStreet,
+    getStreetWithCoordinates : getStreetWithCoordinates,
+    calculateAndSetObjectBearing : calculateAndSetObjectBearing
   }
 })()

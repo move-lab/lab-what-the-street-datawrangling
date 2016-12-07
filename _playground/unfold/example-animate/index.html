@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Animation Example</title>
+    <style>
+        body{
+            font-family: 'Helvetica Neue', sans-serif;
+        }
+
+        h1{
+            padding-top: 15px;
+        }
+
+        h2{
+            font-weight: normal;
+            padding-bottom: 15px;
+        }
+
+        h1, h2{
+            font-size: 18px;
+            width: 800px;
+            margin: auto;
+        }
+        #wrapper{
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: auto; 
+        }
+        #map{
+            width: 800px;
+            height: 600px;
+        }
+        #canvas{
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.28.0/mapbox-gl.css' rel='stylesheet' />
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.28.0/mapbox-gl.js'></script>
+    <script type="text/javascript" src="../js/unfold.js"></script>
+    <script type="text/javascript" src="../js/coil.js"></script>
+    <script type="text/javascript">
+        var map;
+        var counter;
+        var canvas;
+        var context;
+
+		$( document ).ready(function() {
+            canvas = document.getElementById("canvas");
+            context = canvas.getContext("2d");
+
+            mapboxgl.accessToken = 'pk.eyJ1IjoiYm9nbmVyc3RlcGhhbiIsImEiOiJBMnlqbnZrIn0.YwiGRgpheNMPujZn-JBh6Q';
+            map = new mapboxgl.Map({
+                container: 'map', // container id
+                style: 'mapbox://styles/mapbox/light-v9', //stylesheet location
+                center: [-74.50, 40], // starting position
+                zoom: 9 // starting zoom
+            });
+	    	processFile("../data/161202_Berlin_fromMongodb.json");
+		});
+
+
+    	function processFile(url){
+    		$.getJSON( url, function(streets) {
+                var vectorStreets = [];
+
+                var selectedStreet = [8]; //9 = Adlergestell
+                var street = streets[selectedStreet];
+                var vectorStreet = unfold.getStreetWithVectors( street );
+                
+                map.jumpTo({center: [vectorStreet.origin.lon, vectorStreet.origin.lat], zoom: 14});
+
+                //Converts coordinates to location on map
+                var pixelOrigin = map.project([vectorStreet.origin.lon, vectorStreet.origin.lat])
+                    
+                counter = 0;
+                setInterval(function(){
+                    var oscillator = (-Math.cos(counter/15) + 1)/2;
+                    var unfoldedStreet = getUnfoldedStreetSimple(vectorStreet, oscillator, 4);
+                    //See http://wiki.openstreetmap.org/wiki/Zoom_levels
+                    meterPerPixel = getMeterPerPixel(map.getCenter().lat, map.getZoom());
+                    drawStreet(unfoldedStreet, pixelOrigin, meterPerPixel);
+                    counter ++;
+                },100)
+    		});
+    	}
+
+        // Returns coordinates of unfolded street
+        //
+        //   progress: How far animation has 
+        //      From:  0 (start - no change)
+        //      To:    1 (end - fully unfolded and rotated that start- and endpoint are on the same y)
+        //
+        //   unfoldAmplitude: How far 
+        //     From:   0 (no unravel)
+        //     To:     Infinity (values until 30 work nicely)
+        function getUnfoldedStreetSimple(vectorStreet, progress, unfoldAmplitude){
+            var unfoldFactor = 1 + progress * unfoldAmplitude;
+            var output = unfold.getUnfoldedVectorStreet(vectorStreet, unfoldFactor, progress, progress);
+            return output;
+        }
+
+        function drawStreet(vectorStreet, pixelOrigin, meterPerPixel){
+            clearCanvas();
+            var cursor = JSON.parse(JSON.stringify(pixelOrigin));
+            var previousCursor;
+            var vectors = vectorStreet.vectors;
+            var bearingCounter = 0;
+
+            for (var i = 0; i < vectors.length; i++) {
+                var vector = vectors[i];
+                bearingCounter += vector.deltaBearing;
+
+                var distanceInMeter = vector.distance * 1000;
+                
+                //why times 2? I have no clue ... due to retina? Maybe?
+                var distanceInPixel = unfold.getDistanceInPixels(distanceInMeter, meterPerPixel);
+                var dx = Math.sin(toRadians(bearingCounter)) * distanceInPixel;
+                var dy = Math.cos(toRadians(bearingCounter)) * distanceInPixel;
+
+                previousCursor = JSON.parse(JSON.stringify(cursor)  );
+
+                cursor.x += dx;
+                cursor.y -= dy;
+
+                if (vector.type == "translation") {
+                    context.lineWidth = "1";
+                    context.strokeStyle = "rgba(0,0,0, 0.1)";
+                }else{
+                    context.lineWidth = "3";
+                    context.strokeStyle = "#50E3C2";
+                }
+
+                context.beginPath();
+                context.moveTo(previousCursor.x, previousCursor.y);
+                context.lineTo(cursor.x, cursor.y);
+                context.stroke();
+                context.closePath();
+            };
+        }
+
+        function getMeterPerPixel(lat, zoomLevel){
+            return (40075016.686 * Math.abs(Math.cos(toRadians(lat))) / Math.pow(2, zoomLevel + 8));
+        }
+
+        function clearCanvas(){
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function toRadians(degrees) {
+            return degrees * Math.PI / 180;
+        }
+    </script>
+  </head>
+  <body>
+    <h1>Animation Example</h1>
+    <h2>Unfolding Street Geometry</h2>
+    <div id="wrapper">
+        <div id='map'></div>
+        <canvas id='canvas'width="800" height="600"></canvas>
+    </div>
+  </body>
+ </html>

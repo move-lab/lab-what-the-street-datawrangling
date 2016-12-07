@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Placing Example</title>
+    <style>
+        body{
+            font-family: 'Helvetica Neue', sans-serif;
+        }
+
+        h1{
+            padding-top: 15px;
+        }
+
+        h2{
+            font-weight: normal;
+            padding-bottom: 15px;
+        }
+
+        h1, h2{
+            font-size: 18px;
+            width: 800px;
+            margin: auto;
+        }
+        #canvas{
+            margin-left: 100px;
+            background: #f7f7f7;
+        }
+    </style>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="../js/unfold.js"></script>
+    <script type="text/javascript" src="../js/coil.js"></script>
+    <script type="text/javascript">
+        
+        var canvas;
+        var context;
+
+        $( document ).ready(function() {
+            canvas = document.getElementById("canvas");
+            context = canvas.getContext("2d");
+
+            processFile("../data/161202_Berlin_fromMongodb.json");
+        });
+
+
+        function processFile(url){
+            $.getJSON( url, function(streets) {
+
+                var widthCounter = 0;
+                var gapBetweeStreets = 30; //in m
+                meterPerPixel = 10;
+                var pixelOrigin = {
+                    x: 0,
+                    y: 300
+                }
+
+                // Draw center line for reference
+                context.beginPath();
+                context.lineWidth = "2";
+                context.strokeStyle = "#fff";
+                context.moveTo(0, pixelOrigin.y);
+                context.lineTo(canvas.width, pixelOrigin.y);
+                context.stroke();
+                context.closePath();
+
+                //for (var i = 0; i < streets.length; i++) {
+                for (var i = 0; i < 200; i++) {
+                    var street = streets[i]
+                    var vectorStreet = unfold.getStreetWithVectors( street );
+
+                    var unfoldedStreet = getUnfoldedStreetSimple(vectorStreet, 1, 20);
+                    unfold.calculateAndSetObjectBearing(unfoldedStreet);
+                    var delta = getAngleDifference(90, unfoldedStreet.objectBearing);
+                    unfold.rotateVectorStreet(unfoldedStreet, delta);
+                    
+
+                    pixelOrigin.x = widthCounter;
+                    widthCounter += drawStreet(unfoldedStreet, pixelOrigin, meterPerPixel);
+                    widthCounter += unfold.getDistanceInPixels(gapBetweeStreets, meterPerPixel);
+                };
+            });
+        }
+
+        // Returns coordinates of unfolded street
+        //
+        //   progress: How far animation has 
+        //      From:  0 (start - no change)
+        //      To:    1 (end - fully unfolded and rotated that start- and endpoint are on the same y)
+        //
+        //   unfoldAmplitude: How far 
+        //     From:   0 (no unravel)
+        //     To:     Infinity (values until 30 work nicely)
+        function getUnfoldedStreetSimple(vectorStreet, progress, unfoldAmplitude){
+            var unfoldFactor = 1 + progress * unfoldAmplitude;
+            var output = unfold.getUnfoldedVectorStreet(vectorStreet, unfoldFactor, progress, progress);
+            return output;
+        }
+
+        function drawStreet(vectorStreet, pixelOrigin, meterPerPixel){
+            var cursor = JSON.parse(JSON.stringify(pixelOrigin));
+            var previousCursor;
+            var vectors = vectorStreet.vectors;
+            var bearingCounter = 0;
+
+            var width = 0;
+
+            for (var i = 0; i < vectors.length; i++) {
+                var vector = vectors[i];
+                bearingCounter += vector.deltaBearing;
+
+                var distanceInMeter = vector.distance * 1000;
+                
+                //why times 2? I have no clue ... due to retina? Maybe?
+                var distanceInPixel = unfold.getDistanceInPixels(distanceInMeter, meterPerPixel);
+                var dx = Math.sin(toRadians(bearingCounter)) * distanceInPixel;
+                var dy = Math.cos(toRadians(bearingCounter)) * distanceInPixel;
+
+                previousCursor = JSON.parse(JSON.stringify(cursor)  );
+
+                cursor.x += dx;
+                cursor.y -= dy;
+
+                if (vector.type == "translation") {
+                    context.lineWidth = "1";
+                    context.strokeStyle = "rgba(0,0,0, 0.1)";
+                }else{
+                    context.lineWidth = "3";
+                    context.strokeStyle = "#50E3C2";
+
+                }
+
+                context.beginPath();
+                context.moveTo(previousCursor.x, previousCursor.y);
+                context.lineTo(cursor.x, cursor.y);
+                context.stroke();
+                context.closePath();
+
+                width = cursor.x - pixelOrigin.x;
+            };
+            return width;
+        }
+
+        function getMeterPerPixel(lat, zoomLevel){
+            return (40075016.686 * Math.abs(Math.cos(toRadians(lat))) / Math.pow(2, zoomLevel + 8));
+        }
+
+        function clearCanvas(){
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function toRadians(degrees) {
+            return degrees * Math.PI / 180;
+        }
+
+        function getAngleDifference(angle1, angle2){
+            var d = angle1 - angle2
+             while (d < -180) {
+                d += 360;
+              };
+              while (d > 180) {
+                d -= 360;
+              };
+            return d;
+          }
+    </script>
+  </head>
+  <body>
+    <h1>Placing Example</h1>
+    <h2>The Principle Behind Coiling</h2> 
+    <canvas id='canvas' width="20000" height="600"></canvas>
+  </body>
+ </html>
