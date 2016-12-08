@@ -46,7 +46,7 @@
                 var gapBetweeStreets = 2; //in m
                 meterPerPixel = 1;
 
-                var bendnessStreets = [];
+                var pixelStreets = [];
 
                 //for (var i = 0; i < streets.length; i++) {
                 for (var i = 0; i < 200; i++) {
@@ -59,17 +59,22 @@
                     unfold.rotateVectorStreet(unfoldedStreet, delta);
                     var newUnfoldedStreet = unfold.subdivideVectorStreet(unfoldedStreet, 1);
 
-                    var bendness = getBendness(newUnfoldedStreet, meterPerPixel);
-                    bendnessStreets.push(bendness);
+                    var pixelStreet = getStreetInPixels(newUnfoldedStreet, meterPerPixel);
+                    pixelStreets.push(pixelStreet);
                 };
 
                 coil.setProperties(600, 5, [100, 300]);
-                var svgCode = coil.getSvgCode(bendnessStreets, unfold.getDistanceInPixels(gapBetweeStreets, meterPerPixel));
+                var svgCode = coil.getSvgCode(pixelStreets, unfold.getDistanceInPixels(gapBetweeStreets, meterPerPixel));
                 $('#svg').html(svgCode);
             });
         }
 
-        function getBendness(vectorStreet, meterPerPixel){
+        function getStreetInPixels(vectorStreet, meterPerPixel){
+            var output = JSON.parse( JSON.stringify(vectorStreet) );
+                delete output.vectors;
+                delete output.origin;
+                delete output.destination;
+
             var cursor = {
                 x: 0,
                 y: 0
@@ -97,7 +102,8 @@
                 // }
                 coordinates.push({x: cursor.x, y: cursor.y})
             };
-            return coordinates;
+            output.coordinates = coordinates;
+            return output;
         }
 
         // Returns coordinates of unfolded street

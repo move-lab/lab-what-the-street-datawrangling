@@ -31,9 +31,11 @@ var coil = (function() {
 
     for (var i = 0; i < coordinateStreets.length; i++) {
       var street = coordinateStreets[i];
-      arrayOfSvgPieces.push('<path stroke="#50E3C2" stroke-width="4" fill="none" d="');
-      for (var j = 0; j < street.length; j++) {
-        var point = street[j];
+      console.log(street);
+      var coordinates = street.coordinates;
+      arrayOfSvgPieces.push('<path id="' + street._id + '" stroke="#50E3C2" stroke-width="4" fill="none" d="');
+      for (var j = 0; j < coordinates.length; j++) {
+        var point = coordinates[j];
 
         var distance = point.x;        
         //var bumpHeight = point.y;
@@ -62,7 +64,7 @@ var coil = (function() {
         }else{
           arrayOfSvgPieces.push('L' + x + ',' + y + ' ');
         }
-        if (j == street.length -1) {
+        if (j == coordinates.length -1) {
           distanceCounter += distance;
         };
       };

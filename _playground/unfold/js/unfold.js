@@ -263,7 +263,7 @@ var unfold = (function() {
     rotateVectorStreet : rotateVectorStreet,
     getDistanceInPixels : getDistanceInPixels,
     getStreetWithVectors : getStreetWithVectors,
-    dissipateVectorStreet : dissipateVectorStreet,
+    subdivideVectorStreet : subdivideVectorStreet,
     getUnfoldedVectorStreet : getUnfoldedVectorStreet,
     getStreetWithCoordinates : getStreetWithCoordinates,
     calculateAndSetObjectBearing : calculateAndSetObjectBearing
