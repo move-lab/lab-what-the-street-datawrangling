@@ -43,27 +43,28 @@
             $.getJSON( url, function(streets) {
 
                 var widthCounter = 0;
-                var gapBetweeStreets = 5; //in pixel
-                meterPerPixel = 300;
+                var gapBetweeStreets = 2; //in m
+                meterPerPixel = 1;
 
                 var bendnessStreets = [];
 
                 //for (var i = 0; i < streets.length; i++) {
-                for (var i = 0; i < 1200; i++) {
-                    var street = streets[i]
+                for (var i = 0; i < 200; i++) {
+                    var street = streets[i];
                     var vectorStreet = unfold.getStreetWithVectors( street );
 
-                    var unfoldedStreet = getUnfoldedStreetSimple(vectorStreet, 1, 20);
+                    var unfoldedStreet = getUnfoldedStreetSimple(vectorStreet, 1, 2);
                     unfold.calculateAndSetObjectBearing(unfoldedStreet);
                     var delta = getAngleDifference(90, unfoldedStreet.objectBearing);
                     unfold.rotateVectorStreet(unfoldedStreet, delta);
+                    var newUnfoldedStreet = unfold.subdivideVectorStreet(unfoldedStreet, 1);
 
-                    var bendness = getBendness(unfoldedStreet, meterPerPixel);
+                    var bendness = getBendness(newUnfoldedStreet, meterPerPixel);
                     bendnessStreets.push(bendness);
                 };
 
-                coil.setProperties(600, 5, [100, 100]);
-                var svgCode = coil.getSvgCode(bendnessStreets, gapBetweeStreets);
+                coil.setProperties(600, 5, [100, 300]);
+                var svgCode = coil.getSvgCode(bendnessStreets, unfold.getDistanceInPixels(gapBetweeStreets, meterPerPixel));
                 $('#svg').html(svgCode);
             });
         }
@@ -84,11 +85,9 @@
                 bearingCounter += vector.deltaBearing;
 
                 var distanceInMeter = vector.distance * 1000;
-                
-                //why times 2? I have no clue ... due to retina? Maybe?
                 var distanceInPixel = unfold.getDistanceInPixels(distanceInMeter, meterPerPixel);
                 var dx = Math.sin(toRadians(bearingCounter)) * distanceInPixel;
-                var dy = Math.cos(toRadians(bearingCounter)) * distanceInPixel;
+                var dy = Math.cos(toRadians(bearingCounter)) * distanceInPixel;                
 
                 cursor.x += dx;
                 cursor.y -= dy;

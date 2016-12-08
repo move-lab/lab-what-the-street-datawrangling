@@ -20,6 +20,7 @@ var unfold = (function() {
   }
 
   function getDistanceInPixels(meter, meterPerPixel){
+    //why times 2? I have no clue ... due to retina? Maybe?
     return meter * 2 / meterPerPixel; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
   }
 
@@ -54,6 +55,36 @@ var unfold = (function() {
       }
     };
     return output;
+  }
+
+  // Adds intermediate points to the street, so you have more coordinates to bend
+  function subdivideVectorStreet(vectorStreet, maximumLengthInMeter){
+      var output = JSON.parse( JSON.stringify(vectorStreet) );
+          output.coordinates = [];
+          delete output.vectors;
+
+      output.vectors = [];
+
+      var vectors = vectorStreet.vectors;
+      var maximumLengthInKm = maximumLengthInMeter/1000;
+      for (var i = 0; i < vectors.length; i++) {
+          var vector = vectors[i];
+          var distance = vector.distance;
+          var partNumber = Math.max(Math.ceil(distance/maximumLengthInKm),1);
+          var partLength = distance/partNumber;
+
+          for (var j = 0; j < partNumber; j++) {
+              var newVector = JSON.parse(JSON.stringify(vector));
+              newVector.distance = partLength;
+
+              if (j > 0) {
+                  newVector.deltaBearing = 0;
+              };
+              output.vectors.push(newVector);
+          };
+      };
+
+      return output;
   }
 
 
@@ -232,6 +263,7 @@ var unfold = (function() {
     rotateVectorStreet : rotateVectorStreet,
     getDistanceInPixels : getDistanceInPixels,
     getStreetWithVectors : getStreetWithVectors,
+    dissipateVectorStreet : dissipateVectorStreet,
     getUnfoldedVectorStreet : getUnfoldedVectorStreet,
     getStreetWithCoordinates : getStreetWithCoordinates,
     calculateAndSetObjectBearing : calculateAndSetObjectBearing
