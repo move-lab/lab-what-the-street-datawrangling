@@ -24,6 +24,11 @@ var unfold = (function() {
     return meter * 2 / meterPerPixel; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
   }
 
+  function getDistanceInMeters(pixel, meterPerPixel){
+    //why times 2? I have no clue ... due to retina? Maybe?
+    return meterPerPixel / meter / 2; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
+  }
+
   function getStreetWithCoordinates(vectorStreet){
     //preparing output
     var output = JSON.parse( JSON.stringify(vectorStreet) );
@@ -60,21 +65,28 @@ var unfold = (function() {
   // Adds intermediate points to the street, so you have more coordinates to bend
   function subdivideVectorStreet(vectorStreet, maximumLengthInMeter){
       var output = JSON.parse( JSON.stringify(vectorStreet) );
-          output.coordinates = [];
           delete output.vectors;
 
       output.vectors = [];
 
       var vectors = vectorStreet.vectors;
+      var originalLengths = [];
+      var subVectors = [];
+
       var maximumLengthInKm = maximumLengthInMeter/1000;
       for (var i = 0; i < vectors.length; i++) {
           var vector = vectors[i];
           var distance = vector.distance;
-          var partNumber = Math.max(Math.ceil(distance/maximumLengthInKm),1);
-          var partLength = distance/partNumber;
+          var numberOfParts = Math.max(Math.ceil(distance/maximumLengthInKm),1);
+          var partLength = distance/numberOfParts;
 
-          for (var j = 0; j < partNumber; j++) {
+          originalLengths.push(distance);
+          subVectors.push(numberOfParts);
+
+
+          for (var j = 0; j < numberOfParts; j++) {
               var newVector = JSON.parse(JSON.stringify(vector));
+              newVector.originalNumber = i;
               newVector.distance = partLength;
 
               if (j > 0) {
@@ -82,7 +94,11 @@ var unfold = (function() {
               };
               output.vectors.push(newVector);
           };
+
       };
+
+      output.originalLengths = originalLengths;
+      output.subVectors = subVectors;
 
       return output;
   }
@@ -262,6 +278,7 @@ var unfold = (function() {
     getObjectBearing : getObjectBearing,
     rotateVectorStreet : rotateVectorStreet,
     getDistanceInPixels : getDistanceInPixels,
+    getDistanceInMeters : getDistanceInMeters,
     getStreetWithVectors : getStreetWithVectors,
     subdivideVectorStreet : subdivideVectorStreet,
     getUnfoldedVectorStreet : getUnfoldedVectorStreet,

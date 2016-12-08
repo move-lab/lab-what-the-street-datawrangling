@@ -28,6 +28,23 @@
             margin: auto;
             display: block;
         }
+
+        #svg{
+            text-align: center;            
+            color: #ababab;
+        }
+
+        #bottom{
+            position: fixed;
+            bottom: 30px;
+            left: 130px;
+            text-align: right;
+            font-size: 1.5rem;
+        }
+
+        #bottom:hover{
+            cursor: pointer;
+        }
     </style>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
@@ -35,9 +52,13 @@
     <script type="text/javascript" src="../js/coil.js"></script>
     <script type="text/javascript">
         $( document ).ready(function() {
+            $('#bottom').on('click', function(){
+                $('html, body').animate({
+                    scrollTop: $("#conclusion").offset().top
+                }, 30000);
+            })
             processFile("../data/161202_Berlin_fromMongodb.json");
         });
-
 
         function processFile(url){
             $.getJSON( url, function(streets) {
@@ -48,8 +69,9 @@
 
                 var pixelStreets = [];
 
-                //for (var i = 0; i < streets.length; i++) {
-                for (var i = 0; i < 200; i++) {
+                for (var i = 0; i < streets.length; i++) {
+                //for (var i = 0; i < 20; i++) {
+                //for (var i = 0; i < 1200; i++) {
                     var street = streets[i];
                     var vectorStreet = unfold.getStreetWithVectors( street );
 
@@ -58,7 +80,6 @@
                     var delta = getAngleDifference(90, unfoldedStreet.objectBearing);
                     unfold.rotateVectorStreet(unfoldedStreet, delta);
                     var newUnfoldedStreet = unfold.subdivideVectorStreet(unfoldedStreet, 1);
-
                     var pixelStreet = getStreetInPixels(newUnfoldedStreet, meterPerPixel);
                     pixelStreets.push(pixelStreet);
                 };
@@ -144,6 +165,8 @@
   <body>
     <h1>Coiling Example</h1>
     <h2>How Coiling Streets Could Work</h2> 
-    <div id="svg"></div>
+    <div id="svg">Calculating ... </br>(this will take a while)</div>
+    <div id="conclusion"></div>
+    <div id="bottom">↓</div>
   </body>
  </html>

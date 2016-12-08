@@ -13,7 +13,7 @@ var coil = (function() {
   }
 
   //Returns svg code of coil
-  function getSvgCode(coordinateStreets, gapSize){
+  function getRawSvgCode(coordinateStreets, gapSize){
     updateProperties();
 
     margin = {
@@ -31,7 +31,6 @@ var coil = (function() {
 
     for (var i = 0; i < coordinateStreets.length; i++) {
       var street = coordinateStreets[i];
-      console.log(street);
       var coordinates = street.coordinates;
       arrayOfSvgPieces.push('<path id="' + street._id + '" stroke="#50E3C2" stroke-width="4" fill="none" d="');
       for (var j = 0; j < coordinates.length; j++) {
@@ -67,6 +66,84 @@ var coil = (function() {
         if (j == coordinates.length -1) {
           distanceCounter += distance;
         };
+      };
+      arrayOfSvgPieces.push('"/>');
+      distanceCounter += gapSize;
+    };
+
+    svgHeight += margin.top;
+    svgHeight += coil.padding[0];
+
+    arrayOfSvgPieces.push('" />');
+    arrayOfSvgPieces.push('</svg>');
+
+    arrayOfSvgPieces.unshift('<svg width="' + svgWidth + 'px" height="' + svgHeight +'px"  viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '">');
+
+    var svgCode = arrayOfSvgPieces.join("");
+    return svgCode;
+  }
+
+  //Returns svg code of coil
+  function getSvgCode(coordinateStreets, gapSize){
+    updateProperties();
+
+    margin = {
+      top: 0,
+      left: 0
+    }
+
+    margin.top += coil.padding[0]/2;
+    margin.left += coil.padding[1]/2;
+
+    var distanceCounter = 0;
+    var arrayOfSvgPieces = [];
+    var svgHeight;
+    var svgWidth = coil.width + coil.curveRadius*2 + margin.left + coil.padding[1];
+    var lastY;
+
+  for (var i = 0; i < coordinateStreets.length; i++) {
+      var street = coordinateStreets[i];
+      var coordinates = street.coordinates;
+      arrayOfSvgPieces.push('<path id="' + street._id + '" stroke="#50E3C2" stroke-width="4" fill="none" d="');
+      for (var j = 0; j < coordinates.length; j++) {
+        var point = coordinates[j];
+
+        var distance = point.x;        
+        //var bumpHeight = point.y;
+        var bumpHeight = point.y;
+
+        if (point.y < 0) {
+          bumpHeight = -Math.pow(Math.abs(point.y), 1/3);
+        }else{
+          bumpHeight = Math.pow(point.y, 1/3);
+        }
+        //console.log(point.y, Math.log(point.y), Math.sqrt(point.y));
+
+        var currentDistance = distanceCounter + distance;
+
+        var cursor = getPositionOnCoil( currentDistance);
+
+        var dx = Math.sin(cursor.angle) * bumpHeight;
+        var dy = Math.cos(cursor.angle) * bumpHeight;
+        
+        var x = cursor.x + margin.left + dx;
+        var y = Math.round((cursor.y + margin.top + dy)*10)/10;
+
+        svgHeight = y;
+        if (j==0) {
+          arrayOfSvgPieces.push('M' + x + ',' + y + ' ');
+        }else{
+          if (lastY == y && j != 1) {
+            arrayOfSvgPieces[arrayOfSvgPieces.length - 1] = ('L' + x + ',' + y + ' ');
+          }else{
+            arrayOfSvgPieces.push('L' + x + ',' + y + ' ');  
+          }
+          
+        }
+        if (j == coordinates.length -1) {
+          distanceCounter += distance;
+        };
+        lastY = y;
       };
       arrayOfSvgPieces.push('"/>');
       distanceCounter += gapSize;
