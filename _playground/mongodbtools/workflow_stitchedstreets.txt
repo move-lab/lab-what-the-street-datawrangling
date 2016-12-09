@@ -11,7 +11,7 @@ Overpass
 
 Get all street names:
 -) Download city osm.bz2 file from geofabrik
--) ./osmfilter berlin/berlin_cropped.osm --keep="highway=residential =primary =secondary =tertiary =unclassified" --drop="public_transport=stop_position public_transport=platform public_transport man_made leisure highway=traffic_signals railway=station entrance=yes barrier=gate barrier" --ignore-dependencies > temp.osm
+-) ./osmfilter berlin/berlin_cropped.osm --keep="highway=residential =primary =secondary =tertiary =unclassified" --drop="public_transport=stop_position public_transport=platform public_transport man_made leisure highway=traffic_signals railway=station entrance=yes barrier=gate barrier" > temp.osm
 -) ./osmconvert temp.osm --all-to-nodes --csv="name" > temp.csv
 -) sort -u temp.csv > streetnames.txt
 
@@ -26,8 +26,9 @@ If nowhere to be found, use openstreetmap:
 ) ;(._;>;);out skel;
 
 -) Load into QGIS, save as poly via Vector > Export OSM Poly (if necessary, first save as a duplicate with correct CRS)
--) osmosis --read-xml file=/Users/szellmi/Downloads/berlin-latest.osm --bp file=/Users/szellmi/Google\ Drive/MOOVELLAB/00_Projects/mobviz/data/geo/berlin/berlin_boundary.poly --write-xml file=/Users/szellmi/Downloads/berlin-latest_cropped.osm 
-
+-) osmosis --read-xml file=/Users/szellmi/Downloads/berlin-latest.osm --bp file=/Users/szellmi/Google\ Drive/MOOVELLAB/00_Projects/mobviz/data/geo/berlin/berlin_boundary.poly --used-node --write-xml file=/Users/szellmi/Downloads/ berlin_cropped.osm 
+ALTERNATIVELY
+-) ./osmconvert /Users/szellmi/Desktop/geo/berlin/berlin-latest.osm -B=/Users/szellmi/Desktop/geo/berlin/berlin_boundary.poly --complex-ways --complete-ways -o=/Users/szellmi/Desktop/geo/berlin/berlin_cropped.osm
 
 
 Insert stuff into mongoDB:
