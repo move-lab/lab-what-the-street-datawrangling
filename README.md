@@ -40,6 +40,7 @@ Follow this order. If not noted otherwise, run commands in terminal. Examples fo
 - Set cityname parameter and execute unwindstreet.ipynb
 
 #### Generate parking spots
+- Run SVGNest with python3 -m http.server
 - Set cityname parameter and execute parkingtosvgbike.ipynb **step by step**. This involves executing SVGNest inbetween!
 - Set cityname parameter and execute parkingtosvgcar.ipynb **step by step**. This involves executing SVGNest inbetween!
 
