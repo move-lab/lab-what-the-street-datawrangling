@@ -45,13 +45,34 @@
         #bottom:hover{
             cursor: pointer;
         }
+
+        #map { position:fixed; top:0; bottom:0; width: vw; height: vh;}
     </style>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
     <script type="text/javascript" src="../js/unfold.js"></script>
     <script type="text/javascript" src="../js/coil.js"></script>
     <script type="text/javascript">
+        var canvas;
+        var context;
+
+        $.easing.easeOutBounce = function (x, t, b, c, d) {
+            if ((t/=d) < (1/2.75)) {
+                return c*(7.5625*t*t) + b;
+            } else if (t < (2/2.75)) {
+                return c*(7.5625*(t-=(1.5/2.75))*t + .75) + b;
+            } else if (t < (2.5/2.75)) {
+                return c*(7.5625*(t-=(2.25/2.75))*t + .9375) + b;
+            } else {
+                return c*(7.5625*(t-=(2.625/2.75))*t + .984375) + b;
+            }
+        };
+
         $( document ).ready(function() {
+            canvas = document.getElementById("canvas");
+            context = canvas.getContext("2d");
+
             $('#bottom').on('click', function(){
                 $('html, body').animate({
                     scrollTop: $("#conclusion").offset().top
@@ -64,67 +85,163 @@
             $.getJSON( url, function(streets) {
 
                 var widthCounter = 0;
-                var gapBetweeStreets = 2; //in m
-                meterPerPixel = 1;
+                var gapBetweeStreets = 0.005; //in km
 
-                var pixelStreets = [];
+                var widthInMeter = 729;
+                var widthInPixels = 592;
+                meterPerPixel = widthInMeter/widthInPixels;
 
-                for (var i = 0; i < streets.length; i++) {
-                //for (var i = 0; i < 20; i++) {
+                var coiledStreets = [];
+                var vectorStreets = [];
+
+                var positionOnCoilCounter = 0;
+                //for (var i = 0; i < streets.length; i++) {
+                for (var i = 0; i < 100; i++) {
                 //for (var i = 0; i < 1200; i++) {
+                    coil.setProperties(widthInMeter, 5)
                     var street = streets[i];
                     var vectorStreet = unfold.getStreetWithVectors( street );
-
-                    var unfoldedStreet = getUnfoldedStreetSimple(vectorStreet, 1, 2);
-                    unfold.calculateAndSetObjectBearing(unfoldedStreet);
-                    var delta = getAngleDifference(90, unfoldedStreet.objectBearing);
-                    unfold.rotateVectorStreet(unfoldedStreet, delta);
-                    var newUnfoldedStreet = unfold.subdivideVectorStreet(unfoldedStreet, 1);
-                    var pixelStreet = getStreetInPixels(newUnfoldedStreet, meterPerPixel);
-                    pixelStreets.push(pixelStreet);
+                    var vectorStreetDivided = unfold.subdivideVectorStreet(vectorStreet, 1);
+                
+                    var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter);
+                    positionOnCoilCounter += (coiledStreet.coilEnd - coiledStreet.coilStart)
+                    positionOnCoilCounter += gapBetweeStreets;
+                    
+                    coiledStreets.push( coiledStreet );
+                    vectorStreets.push( vectorStreetDivided );
                 };
 
-                coil.setProperties(600, 5, [100, 300]);
-                var svgCode = coil.getSvgCode(pixelStreets, unfold.getDistanceInPixels(gapBetweeStreets, meterPerPixel));
-                $('#svg').html(svgCode);
-            });
+                for (var i = 0; i < coiledStreets.length; i++) {
+                    testDraw(vectorStreets[i], coiledStreets[i], 0, 0, meterPerPixel);
+                    //if (i == 9) {
+                     //   animate(vectorStreets[i], coiledStreets[i]);
+                    //};
+                };
+        });
+    }
+
+        function animate(vectorStreet, coiledStreet){
+            var scale = 800;
+            var timingFactor = Math.max(coiledStreet.length * 150, 1000);
+
+            testDraw(vectorStreet, coiledStreet, 0, 0, scale);
+
+            $({progressUnfold: 0}).delay(200).animate(
+                {progressUnfold: 1}, 
+                {duration: timingFactor*2, 
+                 easing: "easeOutBounce",
+                 progress: function(animation, progress) {
+                    clearCanvas();
+                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, 0, scale);
+                 },
+                 complete: function (argument) {
+                     $({progressStitch: 0}).delay(300).animate(
+                        {progressStitch: 1}, 
+                        {duration: timingFactor*1.2, 
+                         easing: "easeInOutBack",
+                         progress: function(animation, progress) {
+                            clearCanvas();
+                            testDraw(vectorStreet, coiledStreet, 1, this.progressStitch, scale);
+                         },
+                         complete: function(){
+                            $({progressUnfold: 1, progressStitch: 1}).delay(800).animate(
+                                {progressUnfold: 0, progressStitch: 0}, 
+                                {duration: timingFactor*2, 
+                                 easing: "easeInOutCubic",
+                                 progress: function(animation, progress) {
+                                    clearCanvas();
+                                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, this.progressStitch, scale);}
+                                    , complete: function(){
+                                        animate(vectorStreet, coiledStreet)
+                                    }
+                                })
+                         }
+                        }
+                    );
+                 }
+                }
+            );
         }
 
-        function getStreetInPixels(vectorStreet, meterPerPixel){
-            var output = JSON.parse( JSON.stringify(vectorStreet) );
-                delete output.vectors;
-                delete output.origin;
-                delete output.destination;
+        function testDraw(originalStreet, coiledStreet, progressUnfold, progressRestitch, meterPerPixel){
+            var scale = meterPerPixel / 1000;
+            var boundingBox = {
+              top: null,
+              bottom: null,
+              left: null,
+              right: null
+            }
+
+            var originalGeometry = originalStreet.vectors;
+            var coiledGeometry = coiledStreet.vectors;
+
 
             var cursor = {
-                x: 0,
-                y: 0
+                x:100 + coiledStreet.coilOrigin.x / scale, 
+                y:100 + coiledStreet.coilOrigin.y / scale
             };
-            var previousCursor;
-            var vectors = vectorStreet.vectors;
-            var bearingCounter = 0;
+            var cursorCoordinates = {x:0, y:0};
+            var angleCounter = 0;
 
-            var coordinates = [];
+            for (var j = 0; j < coiledGeometry.length; j++) {
+                var angleDiff = getAngleDifference(originalGeometry[j].deltaBearing, coiledGeometry[j].deltaAngle);
+                var distanceDiff = originalGeometry[j].distance - coiledGeometry[j].distance;
 
-            for (var i = 0; i < vectors.length; i++) {
-                var vector = vectors[i];
-                bearingCounter += vector.deltaBearing;
+                var vector = coiledGeometry[j];
 
-                var distanceInMeter = vector.distance * 1000;
-                var distanceInPixel = unfold.getDistanceInPixels(distanceInMeter, meterPerPixel);
-                var dx = Math.sin(toRadians(bearingCounter)) * distanceInPixel;
-                var dy = Math.cos(toRadians(bearingCounter)) * distanceInPixel;                
+                var distance = (vector.distance + distanceDiff * progressUnfold) / scale;
+                if (originalGeometry[j].type == "translation") {
+                    distance = distance * progressRestitch;
+                }
+
+                
+
+                
+                angleCounter += vector.deltaAngle + angleDiff * progressUnfold;
+                //angleCounter += vector.deltaAngle;
+
+                var dx = Math.sin( toRadians(angleCounter) ) * distance;
+                var dy = Math.cos( toRadians(angleCounter) ) * distance;
+
+                if (originalGeometry[j].type == "translation") {
+                    context.lineWidth = "1";
+                    context.strokeStyle = "rgba(0,0,0, 0)";
+                }else{
+                    context.lineWidth = "2";
+                    context.strokeStyle = "#50E3C2";
+                }
+
+                context.beginPath();
+                context.moveTo(cursor.x, cursor.y);
 
                 cursor.x += dx;
                 cursor.y -= dy;
 
-                // if (vector.type == "translation") {
-                // }else{
-                // }
-                coordinates.push({x: cursor.x, y: cursor.y})
+                var dxCoord = Math.sin( toRadians(angleCounter) ) * vector.distance;
+                var dyCoord = Math.cos( toRadians(angleCounter) ) * vector.distance;
+
+                cursorCoordinates.x += dxCoord;
+                cursorCoordinates.y -= dyCoord;
+
+                if (boundingBox.left == null || boundingBox.left > cursorCoordinates.x) {
+                    boundingBox.left = cursorCoordinates.x
+                }
+                if (boundingBox.right == null || boundingBox.right < cursorCoordinates.x) {
+                    boundingBox.right = cursorCoordinates.x
+                }
+                if (boundingBox.top == null || boundingBox.top > cursorCoordinates.y) {
+                    boundingBox.top = cursorCoordinates.y
+                }
+                if (boundingBox.bottom == null || boundingBox.bottom < cursorCoordinates.y) {
+                    boundingBox.bottom = cursorCoordinates.y
+                }
+
+                context.lineTo(cursor.x, cursor.y);
+                context.stroke();
+                context.closePath();
             };
-            output.coordinates = coordinates;
-            return output;
+
+            return boundingBox
         }
 
         // Returns coordinates of unfolded street
@@ -142,8 +259,19 @@
             return output;
         }
 
+        function clearCanvas(){
+            //context.clearRect(0, 0, canvas.width, canvas.height);
+            // context.fillStyle = "rgba(255,255,255,0.05)";
+            // context.rect(0, 0, canvas.width, canvas.height);
+            // context.fill();
+        }
+
         function getMeterPerPixel(lat, zoomLevel){
-            return (40075016.686 * Math.abs(Math.cos(toRadians(lat))) / Math.pow(2, zoomLevel + 8));
+            return (40075016.686 * Math.abs(Math.cos(toRadians(lat))) / Math.pow(2, zoomLevel + 9));
+        }
+
+        function getZoomLevel(lat, pixelPerMeter){
+            return Math.log2(40075016.686 * ( Math.cos(toRadians(lat))/pixelPerMeter )) - 9;
         }
 
         function toRadians(degrees) {
@@ -165,8 +293,9 @@
   <body>
     <h1>Coiling Example</h1>
     <h2>How Coiling Streets Could Work</h2> 
-    <div id="svg">Calculating ... </br>(this will take a while)</div>
+    <!-- <div id="svg">Calculating ... </br>(this will take a while)</div> -->
+    <canvas id='canvas'width="1500" height="1500"></canvas>
     <div id="conclusion"></div>
-    <div id="bottom">↓</div>
+    <!-- <div id="bottom">↓</div> -->
   </body>
  </html>

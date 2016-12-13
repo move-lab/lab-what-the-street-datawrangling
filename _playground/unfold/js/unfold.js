@@ -20,13 +20,11 @@ var unfold = (function() {
   }
 
   function getDistanceInPixels(meter, meterPerPixel){
-    //why times 2? I have no clue ... due to retina? Maybe?
-    return meter * 2 / meterPerPixel; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
+    return meter  / meterPerPixel; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
   }
 
   function getDistanceInMeters(pixel, meterPerPixel){
-    //why times 2? I have no clue ... due to retina? Maybe?
-    return meterPerPixel / meter / 2; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
+    return meterPerPixel / meter; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
   }
 
   function getStreetWithCoordinates(vectorStreet){
