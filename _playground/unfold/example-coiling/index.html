@@ -30,6 +30,7 @@
         }
 
         #svg{
+            position: absolute;
             text-align: center;            
             color: #ababab;
         }
@@ -40,6 +41,13 @@
             left: 130px;
             text-align: right;
             font-size: 1.5rem;
+        }
+
+        #canvas{
+            /*background: rgba(0,0,0,0.1);*/
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
         #bottom:hover{
@@ -71,6 +79,8 @@
 
         $( document ).ready(function() {
             canvas = document.getElementById("canvas");
+            canvas.width = $(window).width();
+            canvas.height = 3000;
             context = canvas.getContext("2d");
 
             $('#bottom').on('click', function(){
@@ -78,7 +88,7 @@
                     scrollTop: $("#conclusion").offset().top
                 }, 30000);
             })
-            processFile("../data/161202_Berlin_fromMongodb.json");
+            processFile("../data/161213_berlin_streets.json");
         });
 
         function processFile(url){
@@ -96,8 +106,7 @@
 
                 var positionOnCoilCounter = 0;
                 //for (var i = 0; i < streets.length; i++) {
-                for (var i = 0; i < 100; i++) {
-                //for (var i = 0; i < 1200; i++) {
+                for (var i = 0; i < 30; i++) {
                     coil.setProperties(widthInMeter, 5)
                     var street = streets[i];
                     var vectorStreet = unfold.getStreetWithVectors( street );
@@ -108,23 +117,27 @@
                     positionOnCoilCounter += gapBetweeStreets;
                     
                     coiledStreets.push( coiledStreet );
+                    console.log(i, coiledStreet.tags.name, coiledStreet)
                     vectorStreets.push( vectorStreetDivided );
                 };
 
-                for (var i = 0; i < coiledStreets.length; i++) {
-                    testDraw(vectorStreets[i], coiledStreets[i], 0, 0, meterPerPixel);
-                    //if (i == 9) {
-                     //   animate(vectorStreets[i], coiledStreets[i]);
-                    //};
-                };
-        });
-    }
+                var svgCode = generateSVG(coiledStreets, meterPerPixel)
 
-        function animate(vectorStreet, coiledStreet){
-            var scale = 800;
+                $('#svg').html(svgCode);
+                $('path#Adersleber_Weg').css('stroke', '#000');
+                $('path#Adersleber_Weg').click(function(){
+                    $(this).hide();
+                    console.log('clicked');
+                    console.log(coiledStreets[27]);
+                    animate(vectorStreets[27], coiledStreets[27], meterPerPixel);
+                })
+            });
+        }
+
+        function animate(vectorStreet, coiledStreet, meterPerPixel){
             var timingFactor = Math.max(coiledStreet.length * 150, 1000);
 
-            testDraw(vectorStreet, coiledStreet, 0, 0, scale);
+            testDraw(vectorStreet, coiledStreet, 0, 0, meterPerPixel);
 
             $({progressUnfold: 0}).delay(200).animate(
                 {progressUnfold: 1}, 
@@ -132,7 +145,7 @@
                  easing: "easeOutBounce",
                  progress: function(animation, progress) {
                     clearCanvas();
-                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, 0, scale);
+                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, 0, meterPerPixel);
                  },
                  complete: function (argument) {
                      $({progressStitch: 0}).delay(300).animate(
@@ -141,7 +154,7 @@
                          easing: "easeInOutBack",
                          progress: function(animation, progress) {
                             clearCanvas();
-                            testDraw(vectorStreet, coiledStreet, 1, this.progressStitch, scale);
+                            testDraw(vectorStreet, coiledStreet, 1, this.progressStitch, meterPerPixel);
                          },
                          complete: function(){
                             $({progressUnfold: 1, progressStitch: 1}).delay(800).animate(
@@ -150,9 +163,9 @@
                                  easing: "easeInOutCubic",
                                  progress: function(animation, progress) {
                                     clearCanvas();
-                                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, this.progressStitch, scale);}
+                                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, this.progressStitch, meterPerPixel);}
                                     , complete: function(){
-                                        animate(vectorStreet, coiledStreet)
+                                        //animate(vectorStreet, coiledStreet)
                                     }
                                 })
                          }
@@ -163,24 +176,67 @@
             );
         }
 
-        function testDraw(originalStreet, coiledStreet, progressUnfold, progressRestitch, meterPerPixel){
+        function generateSVG(coiledStreets, meterPerPixel){
+            var svgPieces = [];
+            for (var i = 0; i < coiledStreets.length; i++) {
+                var coiledStreet = coiledStreets[i];
+                var path = generatePath(coiledStreet, meterPerPixel);
+                svgPieces.push(path);
+            };
+
+            svgPieces.push('</svg>');
+            svgPieces.unshift('<svg width="800px" height="3000px"  viewBox="0 0 800 3000">');
+            var svgCode = svgPieces.join('');
+            return svgCode;
+        }
+
+        function generatePath(coiledStreet, meterPerPixel){
             var scale = meterPerPixel / 1000;
-            var boundingBox = {
-              top: null,
-              bottom: null,
-              left: null,
-              right: null
-            }
-
-            var originalGeometry = originalStreet.vectors;
-            var coiledGeometry = coiledStreet.vectors;
-
-
             var cursor = {
                 x:100 + coiledStreet.coilOrigin.x / scale, 
                 y:100 + coiledStreet.coilOrigin.y / scale
             };
-            var cursorCoordinates = {x:0, y:0};
+
+            var coiledGeometry = coiledStreet.vectors;
+
+            var angleCounter = 0;
+            var pathPieces = [];
+            var name = coiledStreet.tags.name.name || coiledStreet.tags.name || "unnamed";
+            name = name.replace(" ", "_");
+            pathPieces.push('<path id="' + name + '" stroke="#50E3C2" stroke-width="5" fill="none" d="');
+            for (var j = 0; j < coiledGeometry.length; j++) {
+                var vector = coiledGeometry[j];
+                angleCounter += vector.deltaAngle;
+                var distance = vector.distance / scale;
+                var dx = Math.sin( toRadians(angleCounter) ) * distance;
+                var dy = Math.cos( toRadians(angleCounter) ) * distance;
+
+                cursor.x += dx;
+                cursor.y -= dy;
+
+                if (j==0) {
+                    pathPieces.push('M' + cursor.x + ',' + cursor.y + ' ');
+                }else{
+                    pathPieces.push('L' + cursor.x + ',' + cursor.y + ' ');  
+                }
+            }
+
+            pathPieces.push('" />');
+
+            var svgCode = pathPieces.join('');
+            return svgCode;
+        }
+
+        function testDraw(originalStreet, coiledStreet, progressUnfold, progressRestitch, meterPerPixel){
+            var scale = meterPerPixel / 1000;
+            var originalGeometry = originalStreet.vectors;
+            var coiledGeometry = coiledStreet.vectors;
+
+            var cursor = {
+                x:108 + coiledStreet.coilOrigin.x / scale, 
+                y:183 + coiledStreet.coilOrigin.y / scale
+            };
+
             var angleCounter = 0;
 
             for (var j = 0; j < coiledGeometry.length; j++) {
@@ -193,12 +249,8 @@
                 if (originalGeometry[j].type == "translation") {
                     distance = distance * progressRestitch;
                 }
-
-                
-
                 
                 angleCounter += vector.deltaAngle + angleDiff * progressUnfold;
-                //angleCounter += vector.deltaAngle;
 
                 var dx = Math.sin( toRadians(angleCounter) ) * distance;
                 var dy = Math.cos( toRadians(angleCounter) ) * distance;
@@ -207,8 +259,8 @@
                     context.lineWidth = "1";
                     context.strokeStyle = "rgba(0,0,0, 0)";
                 }else{
-                    context.lineWidth = "2";
-                    context.strokeStyle = "#50E3C2";
+                    context.lineWidth = "5";
+                    context.strokeStyle = "#000";
                 }
 
                 context.beginPath();
@@ -217,31 +269,10 @@
                 cursor.x += dx;
                 cursor.y -= dy;
 
-                var dxCoord = Math.sin( toRadians(angleCounter) ) * vector.distance;
-                var dyCoord = Math.cos( toRadians(angleCounter) ) * vector.distance;
-
-                cursorCoordinates.x += dxCoord;
-                cursorCoordinates.y -= dyCoord;
-
-                if (boundingBox.left == null || boundingBox.left > cursorCoordinates.x) {
-                    boundingBox.left = cursorCoordinates.x
-                }
-                if (boundingBox.right == null || boundingBox.right < cursorCoordinates.x) {
-                    boundingBox.right = cursorCoordinates.x
-                }
-                if (boundingBox.top == null || boundingBox.top > cursorCoordinates.y) {
-                    boundingBox.top = cursorCoordinates.y
-                }
-                if (boundingBox.bottom == null || boundingBox.bottom < cursorCoordinates.y) {
-                    boundingBox.bottom = cursorCoordinates.y
-                }
-
                 context.lineTo(cursor.x, cursor.y);
                 context.stroke();
                 context.closePath();
             };
-
-            return boundingBox
         }
 
         // Returns coordinates of unfolded street
@@ -260,10 +291,7 @@
         }
 
         function clearCanvas(){
-            //context.clearRect(0, 0, canvas.width, canvas.height);
-            // context.fillStyle = "rgba(255,255,255,0.05)";
-            // context.rect(0, 0, canvas.width, canvas.height);
-            // context.fill();
+            context.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         function getMeterPerPixel(lat, zoomLevel){
@@ -293,8 +321,8 @@
   <body>
     <h1>Coiling Example</h1>
     <h2>How Coiling Streets Could Work</h2> 
-    <!-- <div id="svg">Calculating ... </br>(this will take a while)</div> -->
-    <canvas id='canvas'width="1500" height="1500"></canvas>
+    <canvas id='canvas'></canvas> 
+    <div id="svg">Calculating ... </br>(this will take a while)</div>
     <div id="conclusion"></div>
     <!-- <div id="bottom">↓</div> -->
   </body>
