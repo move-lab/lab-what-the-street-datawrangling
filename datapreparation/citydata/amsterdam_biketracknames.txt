@@ -1,0 +1,622 @@
+Wembleylaan
+Burgemeester Eliasstraat
+Middenweg Broekermeer
+Klönneplein
+Pinasstraat
+Steengroevenpad
+Strandvlietpad
+Snellerwaardgracht
+Kraansluis
+Dokter Meurerlaan
+Tegenhouderstraat
+Tulpbrug
+Darwinplantsoen
+Schurenbergweg
+Han Lammersbrug
+IJsbaanpad
+Oetgensstraat
+Kop van Jut
+Wethouder Insingerstraat
+Huigenbos
+Ruiseveenpad
+Wannepad
+Valutaboulevard
+Spoorslag
+Piet Moeskopspad
+Flierbospad
+Marinierskade
+Entrepotdok
+Slotermeerlaan
+Gooioord
+Boeninlaan
+Wethouder de Roosplein
+Hemonystraat
+Burgemeester van de Pollstraat
+Roerdomppad
+Fritz Dietrich Kahlenbergstraat
+Dintelstraat
+Ferdinand Bolstraat
+Lichterstraat
+Anna Vockstraat
+Broekzijdschepad
+Zwarte Pad
+Kabelweg
+Berend Boeijingastraat
+Reguliersgracht
+Schelluinenstraat
+Kattenburgerkruisstraat
+Osdorperweg
+Muiderpoortbrug
+Hugo de Vrieslaan
+Kratontuin
+President Allendelaan
+Bessenpad
+Pelikaanbrug
+Kokmeeuwpad
+Beemsterstraat
+Burgemeester de Vlugtlaan
+Kastanjelaan
+Klaprozenweg
+Duinluststraat
+Haarlemmerweg
+Jan Wilsbrug
+Martin Niemöllerstraat
+Kanaaldijk West
+Heenwegpad
+Dantestraat
+Nellesteinpad
+Scheepsbouwweg
+Hobbemakade
+Ampèrestraat
+Linnaeusstraat
+Kadoelenpad
+Voorzitter Stekbrug
+J M van der Meylaan
+Gelderseburg
+Freule Wttewaalpad
+De Ruijterkade
+Linnaeusplantsoen
+IJdok
+C.P.M. Rommeplantsoen
+Tervurenpad
+Kerkepad
+Diemerzeedijk
+Teniersstraat
+Appelweg
+Rosa Luxemburgstraat
+Wijkergouw
+Weteringpad
+Krugerstraat
+Geerdinkhofweg
+Nieuwe Hoogstraat
+Zeevaart
+Tourniairestraat
+Rembrandtpark
+Druivenbrug
+Sint Olofspoort
+Spinozastraat
+Celebesstraat
+Marius Bauerplantsoen
+Borgerstraat
+P.L. Marnettestraat
+Admiraal de Ruijterweg
+Cas Oorthuyskade
+Mantelmeeuwpad
+Overhaalsgang
+Maarkedalpad
+Archimedesplantsoen
+Mijndenhof
+Cesar Willem Ittmanpad
+Jan Moretuspad
+Oude Haagsebrug
+Warmondstraat
+Dijkwegpad
+Binnengasthuisstraat
+Gaaspermolenpad
+Johan Braakensiekhof
+Panamalaan
+Harriet Freezerstraat
+Jan van Zutphenplantsoen
+Hollandsekade
+Nedersticht
+Maaseikpad
+Jan Beijerpad
+Zonnehoekspad
+Rembrandtplein
+Wognumerstraat
+Vikingpad
+Brinkiepad
+Karspeldreef
+Sumatraplantsoen
+Oosterdokskade
+Huntum
+Raamsteeg
+Anna Blamanpad
+Kralenbeek
+Hartveldseweg
+Mijehof
+Overzichtweg
+Johan Jongkindstraat
+Wibautstraat
+Van Neckstraat
+Jollenpad
+Hermelijnvlinder
+Karl Marxpad
+Jan Swammerdambrug
+Jacob van Lennepkade
+Brug Overhoeks
+Tjepmapad
+Westerlengte
+Oosterspoorplein
+Anton Schleperspad
+Vechtstraat
+Rudolf Dieselstraat
+Oude Haagseweg
+Geduld
+Gravestein
+Julianaplein
+Vluchthavenbrug
+Prins Bernhardplein
+Docklandsweg
+Cruquiusweg
+Suikerplein
+Prinses Irenestraat
+Diemerparklaan
+Theo Fransmanbrug
+Heintje Hoekssteeg
+Tosarituin
+Hilversumstraat
+Stoutenburggracht
+H.J.E. Wenckebachweg
+Binnenpolderringdijk Noord
+Bannebrug
+Jan Schaeferpad
+Haarlerbergpad
+Niersstraat
+Renswoudestraat
+Wethouder Abrahamspad
+Fred. Roeskestraat
+Ketelhuisplein
+Spaklerweg
+Hilverbeekstraat
+Stormmeeuwpad
+Vendelstraat
+de Groene Zoom
+Aldebaranplein
+Gerda Brautigamstraat
+Anton Meesterpad
+Schinkelhavenstraat
+Enseignementbrug
+Transvaalkade
+Spengenpad
+Kraaiennestpad
+Theophile de Bockbrug
+Passtukkenpad
+Zonnehof
+Groen van Prinstererstraat
+Jacob van Lennepstraat
+Laan van Vlaanderen
+Zonnebeke
+Bruno van Moerkerkenpassage
+Tienenpad
+Christoffel Plantijnpad
+Fietspad Volgermeerpolder
+Zeeburgerdijk
+Nieuwendammerdijk
+Marjoleinstraat
+Rokin
+Omval
+Kadoelenbrug
+Distelweg
+Jacob Marisplein
+Molsteeg
+Schildersbrug
+Hornweg
+Meeuwenlaan
+Bauduinlaan
+Einthovenstraat
+Ooievaarpad
+Overtoom
+Gaasperdammerpad
+Korte Ouderkerkerdijk
+Baden Powellweg
+Boerenweteringpad
+Koopvaardersplantsoen
+Camera Obscurabrug
+Halvemaansteeg
+Linnaeushof
+Kelbergen
+Weerslootpad
+Buikslotermeerplein
+Barbara Strozzilaan
+Dennenrodepad
+Nannie van Wehlstraat
+Oostelijke Handelskade
+Lascarpad
+Afrikanerplein
+Brettenpad
+Ezelsbrug
+Oostzanerdijk
+Schollenbrug
+Dageraadsbrug
+Kalfjeslaan
+De Roos van Dekamaweg
+Hoekenespad
+Overhoeksparklaan
+Holendrechterweg
+Oetewalerpad
+Hogeweg
+Gabriël Metsustraat
+Han Rensenbrinkpad
+Noordzeeweg
+Parkhof
+Zamenhofstraat
+Henk Sneevlietpad
+Willem van Weldammelaan
+Ruwelspad
+Ringdijk
+Roosje Vospad
+Kraijenhoffstraat
+Geerdinkhofpad
+Hemkade
+Berkenlaan
+Streefkerkstraat
+De Groene Zoom
+Soembawastraat
+Pretoriusstraat
+Theophile de Bockstraat
+Thorbeckeplein
+Nijlpaardenbrug
+Blankenbergestraat
+Krijn Breurstraat
+Fokkemast
+De Wieden
+Kattenburgerkade
+Maurice Peeterspad
+H. Cleyndertweg
+Ballenbrug
+Herderhof
+Kamerlingh Onneslaan
+Wetlandbrug
+1e Kekerstraat
+Bullewijkpad
+Troepiaalsingel
+De Clercqstraat
+Lorentzlaan
+Ravenswaaipad
+Buiksloterkerkpad
+Markengouwtunnel
+Pieter Zeemanlaan
+Piet Peelenbrug
+Ostwaldstraat
+Druivenstraat
+Abcouderpad
+Commandantsbrug
+Deymanstraat
+Schagerlaan
+Trapperspad
+Zoutberg
+Veeneikbrug
+Havenstraat
+Rotterdammerbrug
+Ir. B. Bijvoetbrug
+Mr. J.J. van der Veldebrug
+Lage brug
+Binnenkadijk
+Overbrakerpad
+Cornelis Outshoornstraat
+Waddenweg
+Wilnisgracht
+Suze Groenewegplantsoen
+Zwartegouw
+Wethouder van Essenweg
+Frederiksplein
+Gaasperparkpad
+Jan de Louterpad
+Sint-Hubertpad
+Seineweg
+Kantershofpad
+Haarlemmersluis
+Pleimuiden
+Bogortuin
+St Hubertpad
+Zaanstraat
+Krootstraat
+Fregelaan
+Asingaborg
+Buiksloterweg
+Radioweg
+Dijksgracht
+Papendrechtstraat
+J.H. van Heekpad
+Poolstraat
+Voorlandpad
+Kunstbrug
+Frissensteinpad
+Oetgensdwarsstraat
+Harriët Freezerstraat
+Nico Broekhuysenweg
+Hogeboomspad
+Betuwestraat
+Westmallepad
+Dubbele Buurt
+Blazerpad
+Groenhoven
+Honthorststraat
+Oudebrugsteeg
+Annie Romeinplein
+Ravensteinstraat
+Paasheuvelweg
+Cuyperspassage
+Roomtuintjes
+Tegelarijpad
+Basisweg
+Wagon Litsbrug
+Jacob de Rijkhof
+Alida van den Bosstraat
+Piet Kranenbergpad
+Belgiëplein
+Dick van Dijkbrug
+IJ-promenade
+Hollandia Kattenburgpad
+weerslootpad
+De Heusweg
+Max Euweplein
+Damloperspad
+Teerketelsteeg
+Tweede Coehoornstraat
+Eerste Sweelinckstraat
+Menno Ter Braakstraat
+Orteliuspad
+Legmeerstraat
+Spinozahof
+Meibergdreef
+Ruimzicht
+Brahmsstraat
+Wiegbrug
+Spui
+P.L. Kramerbrug
+Weteringschans
+Middenmeerpad
+Puiflijkpad
+Céramiquelaan
+Vreeswijkpad
+Lange Niezel
+Middenweg
+Kruisherenpad
+Herman Bonpad
+Rhijnspoorplein
+Theo Mann-Bouwmeesterhof
+Imogirituin
+Rietlandpark
+Van Ollefenstraat
+Barentszplein
+Ma Braunpad
+Oranjesluizen
+Willeskopstraat
+Willem Gertenbachstraat
+Jan Schaeferbrug
+Buiksloterdijk
+Meibergpad
+2e Helmersstraat
+Reigersbospad
+Taman Sapituin
+Da Costaplein
+Vlothavenweg
+Tienraaikade
+Westerkeersluis
+Prinsessebrug
+'s-Gravendijkdreef
+Rozenburglaan
+Nieuwe Herengracht
+Albardakade
+Kormelinkweg
+Bob Haarmslaan
+Gulden Kruispad
+Nobelweg
+Anna Spenglerstraat
+Zaanhof
+Mosveld
+Cornelis Lelylaan
+Mauritskade
+Koenenkade
+Sarphatistraat
+Notweg
+Dijkmanshuizenstraat
+Levantkade
+Pieter Postpad
+Handbalstraat
+Staalstraat
+Oude Hoogstraat
+Portsmuiden
+Nadezjda Mandelstamstraat
+Martin Luther Kingpark
+Veelaan
+Piet Heinkade
+Koningsplein
+Bentinckstraat
+Verloren Spoor
+Druivenpad
+Pieter A. van Heijningestraat
+Coöperatiehof
+Uitwegpad
+Bosch van Drakesteinpad
+Daveren
+Milovan Djilasstraat
+Koppelingpad
+Jan de Jonghkade
+Kievitstraat
+Weesperzijde
+mt. Ondinaweg
+Jacob Obrechtplein
+Spuistraat
+Spaarnwouderdijk
+Warmoesstraat
+Jozef Israëlskade
+Ruwelswal
+Hercules Seghersstraat
+Rozenoordpad
+Heisteeg
+Van Diemenstraat
+Mien Labbertonstraat
+Molenwijk
+Plantage Kerklaan
+Kajuitpad
+Europaboulevard
+Ooster Ringdijk
+Jachthavenweg
+Buiksloterbreek
+Societybrug
+Kraandrijverstraat
+Doornburg
+Woltera van Reesstraat
+Nesciobrug
+Fred Petterbaan
+Minervalaan
+Pieter Calandlaan
+Gustav Mahlerplein
+Stavangerweg
+Burgerweeshuispad
+Marius Bauerstraat
+Frederik Hendrikplantsoen
+Oetewalerbrug
+Kelbergenpad
+Cornelis Vermuydenstraat
+President Kennedylaan
+Johannes Vermeerstraat
+Hegelhof
+Albatrospad
+Wally Moespad
+Amstel
+Wijsentkade
+Elisabeth Boddaertstraat
+Johannes Vermeerplein
+Riekerhavenbrug
+Vrijheidslaan
+Koningslaan
+Nassauplein
+Dick Hilleniuspad
+Cabotstraat
+Nieuwevaart
+Witte Katbrug
+Parlevinkerpad
+Ringvaartdijk
+Hoptille
+Consiencebrug
+Korte Kolksteeg
+Coenhavenweg
+Tweede Boerhaavestraat
+Gulden Kruis
+Matrozenhof
+Afroditekade
+Leeuwendalersweg
+Talbotstraat
+Buitengouw
+Ouborg
+Damrak
+Termieterweg
+Dorspad
+Eerste Marnixplantsoen
+Polderweg
+Molenslootpad
+Leksmondplein
+Wijde Kerksteeg
+Amsteldijk
+Randwijkhof
+Gaasterlandstraat
+Blankenstraat
+Oosterdoksdraaibrug
+Schellingwouder Kerkepadsbrug
+Schopenhauerhof
+Nieuwe Batavierstraat
+Spiegelgracht
+George Gershwinplein
+Boeierspad
+Banne Buikslootlaan
+Valkenstein
+Oosterdok
+Albardagracht
+Teslastraat
+Nieuwe Meerpad
+J.M. van der Meylaan
+Muziekbrug
+Ganzenhoefpad
+Plein '40-'45
+Nageljongenstraat
+Copernicusstraat
+Noorderakerweg
+Zelzatestraat
+Kromwijkdreef
+Potgieterstraat
+Bernard Zweerskade
+Peursumstraat
+Jaagpad
+Schinkelhavenkade
+Stadionkade
+Halteriastraat
+Museumstraat
+Keerwal
+Burgemeester Hogguerstraat
+Jan van Zutphenstraat
+Koningssluis
+Meteorenweg
+Brug der Zuchten
+1e Helmersstraat
+Nicolaas Beetsstraat
+Waterpoortweg
+Burgemeester Röellstraat
+3e Helmersstraat
+Joos Banckersweg
+Jacob van Weesenbekestraat
+Stadionweg
+Hendrikje Stoffelsstraat
+Herman de Manstraat
+Tafelbergweg
+Het Breed
+Emilie Knappertstraat
+Korfbalstraat
+Mussenstraat
+Orlyplein
+Westerdoksdijk
+Wethouder Frankeweg
+Dollardpad
+Tweede Sweelinckstraat
+Korte Korsjespoortsteeg
+Reigersbos
+Hortusplantsoen
+Zuider IJdijk
+President Steynstraat
+Immanuel Kanthof
+Plantage Middenlaan
+Eerste Coehoornstraat
+Emmastraat
+Hondecoeterstraat
+Vespuccistraat
+Van Kinsbergenstraat
+Jan Thoméepad
+Kattenrugbrug
+Derkinderenstraat
+Hobbemastraat
+Statenjachtstraat
+Het Luijendijkje
+Krombekstraat
+Zuiderzeeweg
+Geerdinkhof
+Jasper Warnerstraat
+Jan van der Neuthof
+Sloterkade
+Maliebaan
+Oostenburgerpark
+IJdoornlaan
+Voormalige Stadstimmertuin
+Keienbergweg
+Polonceau-kade
+Putterplantsoen
+Drie Burgpad
+Baanakkerspad
+Radarweg
+Jodenbreestraat
+Magere Brug
+Lemelerbergweg
+Ruud Krolbrug
+Geldershoofd

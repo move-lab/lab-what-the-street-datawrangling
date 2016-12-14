@@ -1,0 +1,344 @@
+Lugeck
+Johannes-Fehring-Promenade
+Christine-Enghaus-Weg
+Leberweg
+Donaupromenade
+Josef-Kraft-Weg
+Steinseeweg
+Steinspornbrücke
+Steg Viktor-Kaplan-Straße
+Am Bruckhaufen
+Maria-Jacobi-Gasse
+Ocwirkgasse
+Rosenhügelsteg
+Mannagettasteig
+Herminengasse
+Bertha-Zuckerkandl-Weg
+Eibesbrunnergasse
+Waidäckergasse
+Ferdinand-Kaufmann-Platz
+Fännersteg
+Auparkweg
+Arnezhoferstraße
+Wehlistraße
+Friedrich-Adler-Weg
+Wattmanngasse
+Eibengasse
+Felix-Slavik-Steg
+Am Augartenspitz
+Koblicekgasse
+Franz-Josefs-Kai
+Siebenbrunnengasse
+Leopoldauer Tunnel
+Weissauweg
+Kaiser-Ebersdorfer Straße
+Nußdorfer Steg
+Thonetgasse
+Donauspitalweg
+Horst-Winter-Promenade
+Peschkaweg
+In der Wiesen
+Katzbergersteg
+Grasbergergasse
+Toscaninigasse
+Am Badfeld
+Josef-Palme-Platz
+Hermine-Jursa-Gasse
+Rechte Bahngasse
+Zieritzgasse
+An der oberen Alten Donau
+Arminenstraße
+Polletstraße
+Margeritenweg
+Ravelinstraße
+Winkeläckerweg
+Franklinstraße
+In der Schwarzlackenau
+Rosenhügelstraße
+Lampaweg
+Tanbruckgasse
+Anningerweg
+Hammerfestweg
+Anton-Sattler-Gasse
+Hannah-Arendt-Platz
+Pfeilgasse
+Erdberger Steg
+Kerschensteinergasse
+Linzer Straße
+Steg über die Liesing
+Am Nordbahndamm
+Mumbgasse
+Stüber-Gunther-Gasse
+Schwarzerweg
+Oswald-Thomas-Platz
+Friedensreich-Hundertwasser-Platz
+Kaisermühlenbrücke
+Duchweg
+Venediger Au
+Ambrosweg
+Bodmergasse
+Heustadlsteg
+Rotenturmufer
+Emil-Maurer-Platz
+Nordbahnlände
+Johann-Zak-Weg
+Haböckgasse
+Burjanplatz
+Heiligenstädter Straße
+Flurschützstraße
+Mehlführergasse
+Karl-Metschl-Gasse
+Gaargasse
+Anton-Schmid-Promenade
+Hainburger Weg
+Eßlinger Hauptstraße
+Moissigasse
+Donauradweg
+Klemmweg
+Doblhoffgasse
+Zollamtssteg
+Weyrgasse
+Kolonieweg
+Bleriotgasse
+Ing.-Sarek-Weg
+Bellgassensteg
+Leopold-Böhm-Straße
+Untere Kaistraße
+Pfeiferlände
+Schlossseeweg
+Hirschfeldweg
+Kendlerstraße
+Schiftergasse
+Lobelienweg
+Gmarchhaufenstraße
+Pastinakweg
+Brunner Straße
+Hainburger Straße
+Steg Absberggasse
+Längenfeldgasse
+Guido-Lammer-Gasse
+Georg-Danzer-Steg
+Ettenreichgasse
+Hochwassergasse
+Josefine-Wessely-Weg
+Lehmanngasse - Breitenfurter Straße
+Judith-Deutsch-Steg
+Scheffelstraße
+Prießnitzgasse
+Pfendlergasse
+Am Kanal
+Fred-Liewehr-Gasse
+Liesingbachbegleitweg
+Alpiltoweweg
+Pius-Parsch-Platz
+Hohenbergstraße
+Gürtelradweg
+Kaistraße
+Johann-Friedl-Steg
+Aderklaaer Straße
+Siemens-Nixdorf-Steg
+Rudolf-Huber-Weg
+Hintschiggasse
+Stadlauer Lände
+Annie-Rosar-Weg
+Dolfi-Gruber-Weg
+Traviatagasse
+Untere Viaduktgasse
+Grünauerbrücke
+Kellerberggasse
+Steinitzsteg
+Weißgerberufer
+Schöpfwerk-Steg
+Tönsbergweg
+Kuchelauer Hafenstraße
+Paul-Amann-Brücke
+Haubenbiglstraße
+Leipziger Straße
+Wienflussweg
+Artillerieplatz
+Gillingerweg
+Florian-Berndl-Gasse
+Bäckerstraße
+Rotundenbrücke
+Museumsplatz
+Audorfgasse
+Jedletzbergerstraße
+Schreinerweg
+Schelleingasse
+Bürgerspitalwiese
+Brauereisteg
+Curiegasse
+Purchmannweg;Bachrachgasse
+Christkindlweg
+Erich-Arth-Steg
+Goldschlagstraße
+Linke Nordbahngasse
+Maria-Potesil-Gasse
+Nevillebrücke
+Toni-Fritsch-Weg
+Radingerstraße
+Am Hubertusdamm
+Steg neben der Peutlmühle
+Franz-Reinelt-Steg
+Grillgasse
+Jedleseer Brücke
+Biberhaufenweg
+Reithofferplatz
+Mühlwassersteg
+Paul-Heyse-Gasse
+Kafkasteg
+Blumentalbrücke
+Kreuzherrengasse
+Hofjagdstraße
+Steg beim Bischofsplatz
+Flötzersteigsteg
+Messeplatz
+Jenny-Steiner-Weg
+Kretschmerweg
+Waldgasse
+Praterlände
+Schöpfwerkpromenade
+Josef-Baumann-Gasse
+Gebauergasse
+Praterspitzstraße
+Zwinzstraße
+Atzgersdorfer Straße
+Friedrich-Schmidt-Platz
+Rigolettogasse
+Riegermühle
+Naturlehrpfad
+Larwingasse
+Lichtblaustraße
+Museumstraße
+Maria vom Siege
+Zanaschkagasse
+Vösendorfer Straße
+Leodolterpromenade
+Tetmajergasse
+Am Wasserpark
+Stuwerstraße
+Asperner Heldenplatz
+Süßenbrunner Straße
+Wehr 1
+Schögerhauslände
+Favoritenstraße
+Otto-Willmann-Gasse
+Angelo-Soliman-Weg
+Theodor-Steiskal-Gasse
+Hundertwasser-Promenade
+Liebknechtgasse
+Hohenauergasse
+Lobgrundstraße
+Margaritensteg
+Schönbrunner Schloßbrücke
+Fußgängerbrücke Stadlauer Ohr
+Große Sperlgasse
+Leopoldine-Glöckel-Weg
+Hans-Mayr-Platz
+Andreas-Morth-Weg
+Dopschstraße
+Bahnlände
+Morelligasse
+Aladar-Pecht-Gasse
+Stadionbrücke
+Gutheil-Schoder-Gasse
+Fasanplatz
+Gerhard-Bronner-Straße
+Blümelgasse
+Pastorstraße
+Heinz-Lazek-Weg
+Schnitterweg
+Ha-Wei-Brücke
+Erzherzog-Johann-Platz
+Herbststraße
+Weinfeldweg
+Kefergasse
+Astgassensteg
+Gadnergassenbrücke
+11. Haidequerstraße
+Schumpeterweg
+Franz-von-Sales-Steg
+Viktor-Kaplan-Straße
+Blériotgasse
+Johann-Kutschera-Gasse
+Keinergasse
+Margarete-Seemann-Weg
+Taubnesselweg
+Görgengasse
+Hakelgasse
+Schanzelufer
+Godlewskigasse
+Meldemannstraße
+Himmelbaurgasse
+Neilreichgasse
+Hasnerstraße
+Spittelauer Steg
+Oswald-Redlich-Straße
+Anton-Baumgartner-Straße
+Kobingergasse
+Radetzkyplatz
+Litfaßstraße
+Marco-Polo-Promenade
+Getreidemarkt
+Heigerleinstraße
+Kolbegasse
+Anton-Kuh-Weg
+Landungshauslände
+Schrebergasse
+Bahnstraße
+Liesneckgasse
+Marcusgasse
+Margetinstraße
+Ostrandstraße
+Landesgerichtsstraße
+Grüne Stube
+Triester Straße
+Wilbrandtgasse
+Simmeringer Lände
+Schwarzer Weg
+Hermann-Broch-Gasse
+Strunzgasse
+Carl-Auböck-Promenade
+Funkgasse
+Marianne-Hainisch-Gasse
+Weiglgasse
+Am Hundsturm
+Tunnel Arnoldgasse
+Kleistgasse
+Lobaugasse
+Sebastian-Hofbauer-Weg
+Wolfgang-Schmälzl-Gasse
+Färbermühlgasse
+Schillerpromenade
+Gaswerksteg
+Steinamangerbrücke
+Stadlauer Straße
+Alte Bahntrasse
+Seeschlachtweg
+Auerspergstraße
+Großmarktstraße
+Grünlandgasse
+Teslagasse
+Pernerstorfersteg
+Wolf-in-der-Au-Brücke
+Rosenweg
+Zehdengasse
+Erlaaer Platz
+Ludwig-Kralik-Weg
+Unter der Kirche
+Gemeindeaugasse
+Rudolf-Nurejew-Promenade
+Hugo-Meisl-Weg
+Storchensteg
+Wilfried-Kirchner-Weg
+An der unteren Alten Donau
+Starkfriedgasse
+Lehmanngasse
+Empergergasse
+Altmannsdorfer Straße
+Zangerlestraße
+Josef-Fritsch-Weg
+Mannagettagasse
+Okopenkoweg
+Graedenerweg
+Rechte Wienzeile

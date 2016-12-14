@@ -46,11 +46,12 @@ Note: osmfilter seems buggy and does not actually remove some things we want rem
 
 #### Generate parking spots
 - Run SVGNest with `python3 -m http.server`
-- Set cityname parameter and execute parkingtosvgbike.ipynb **step by step**. This involves executing SVGNest inbetween! **If SVGNest fails** (never finishes packing), execute parkingtosvgbikealt.ipynb instead! An SVG is generated:
+- Set cityname parameter and execute parkingtosvgbike.ipynb **step by step**. This involves executing SVGNest inbetween! **If SVGNest fails** (never finishes packing), execute parkingtosvgbikealt.ipynb instead! An SVG is generated:  
 ![SVG of bike parking spots](datapreparation/output/viennabikeout/all_small.png "SVG of car parking spots")
 
-- Set cityname parameter and execute parkingtosvgcar.ipynb **step by step**. This involves executing SVGNest inbetween! An SVG is generated (shown rotated):
+- Set cityname parameter and execute parkingtosvgcar.ipynb **step by step**. This involves executing SVGNest inbetween! An SVG is generated (shown rotated):  
 ![SVG of car parking spots](datapreparation/output/newyorkcarout/all_small.png "SVG of car parking spots")
+
 
 [1]: https://www.continuum.io/downloads
 [2]: http://www.qgis.org/
