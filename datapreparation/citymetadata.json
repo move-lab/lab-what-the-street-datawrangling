@@ -1,0 +1,37 @@
+{
+  "berlin": {
+    "country": "Germany",
+    "boundingbox": "52.33812,13.0884,52.675499,13.76134",
+    "onstreetparkingspots": 103210,
+    "onstreetparkingspots_source": "http://www.stadtentwicklung.berlin.de/verkehr/politik_planung/strassen_kfz/parkraum/",
+    "modalsplit": "29,15,26,30"
+  },
+  "newyork": {
+    "country": "USA",
+    "boundingbox": "40.496044,-74.255735,40.915256,-73.700272",
+    "onstreetparkingspots": 3900000,
+    "onstreetparkingspots_source": "http://www.streetsblog.org/2011/03/22/new-york-has-81875-metered-parking-spaces-and-millions-of-free-ones/",
+    "modalsplit": "10,1,55,29"
+  },
+  "amsterdam": {
+    "country": "Netherlands",
+    "boundingbox": "52.3216,4.7685,52.4251,5.0173",
+    "onstreetparkingspots": 265225,
+    "onstreetparkingspots_source": "http://dirkmjk.nl/nl/2016/06/amsterdam-heeft-ruimte-voor-nog-eens-21-miljoen-fietsenrekken",
+    "modalsplit": "4,40,29,27"
+  },
+  "stuttgart": {
+    "country": "Germany",
+    "boundingbox": "48.46,8.79,48.93,9.50",
+    "onstreetparkingspots": "?",
+    "onstreetparkingspots_source": "?",
+    "modalsplit": "13,4,32,51"
+  },
+  "sanfrancisco": {
+    "country": "USA",
+    "boundingbox": "",
+    "onstreetparkingspots": 280000,
+    "onstreetparkingspots_source": "http://sf.streetsblog.org/2010/03/29/san-francisco-first-city-in-the-nation-to-count-its-parking-spaces/",
+    "modalsplit": "10,3,32,46"
+  }
+}

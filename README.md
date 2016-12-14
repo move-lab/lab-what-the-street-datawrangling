@@ -4,35 +4,40 @@ A repo to collaborate on a data viz on the impact of new mobility on urban struc
 ## Adding new cities (folder datapreparation)
 Follow this order. If not noted otherwise, run commands in terminal. Examples for berlin.
 ### One-time preliminaries
-- Get osmconvert.c. Set border__edge_M 1300004. Compile: gcc osmconvert.c -lz -O3 -o osmconvert
-- Get osmfilter
-- Get [QGIS][2]
+- Get [osmconvert.c][8]. Set `border__edge_M 1300004` so it can handle larger poly files. Compile: `gcc osmconvert.c -lz -O3 -o osmconvert`
+- Get [osmfilter][9]
+- Get [QGIS][2], install the osmpoly_export plugin
 - Get [Anaconda][1] (Python 3.5)
-- Extra python libraries to install: pymongo, shapely, haversine, osmnx, networkx, pyprind
-- Get mongosm from [https://github.com/stephanbogner/node-mongosm][3]. To get dependencies, run: npm install. 
+- Extra python libraries to install: pymongo, shapely, haversine, [osmnx][10] (first rtree!), pyprind
+- Get mongosm from [Stephan Bogner's fork][3]. To get dependencies, run: `npm install` 
 
 ### Workflow per city
 
-#### Create geofiles
-- Get shapefile of city boundary from somewhere. If nowhere found, use [Turbopass][4]: [out:json];
+#### Create geo files
+- Get shapefile of city boundary from somewhere. If nowhere found, use [Turbopass][4], mind [the correct admin_level][7]:  
+`[out:json];  
 (
   node[boundary="administrative"][admin_level=6](48.46, 8.79, 48.93, 9.50);
   way[boundary="administrative"][admin_level=6](48.46, 8.79, 48.93, 9.50);
-) ;(._;>;);out skel;
-- Load file into QGIS, save as poly via Vector > Export OSM Poly (if necessary, first save as a duplicate with correct CRS)
-- Download city osm.bz2 file from [geofabrik][6], e.g berlin-latest
-- ./osmconvert berlin-latest.osm -B=berlin_boundary.poly --complex-ways --complete-ways -o=berlin_cropped.osm
+) ;(._;>;);  
+out skel;`
+- Load file into QGIS, save as a duplicate with correct CRS: EPSG:4326, and save as poly via Vector > Export OSM Poly
+- Download and unpack osm.bz2 file that contains the city from [geofabrik][6], e.g berlin-latest
+- `./osmconvert berlin-latest.osm -B=berlin_boundary.poly --complex-ways --complete-ways -o=berlin_cropped.osm`
 
 #### Load into MongoDB
-- In options.js of mongosm/lib: populateGeometry: false
-- Run: node mongosm.js --max_old_space_size=8192 -db berlin_raw -f [OSMFILE]
+- In options.js of mongosm/lib: `populateGeometry: false`
+- Run: `node mongosm.js --max_old_space_size=8192 -db berlin_raw -f [OSMFILE]`
 - Set cityname parameter and execute generategeometries.ipynb
 
 #### Street names
-- ./osmfilter berlin_cropped.osm --keep="highway=residential =primary =secondary =tertiary =unclassified" --drop="public_transport=stop_position public_transport=platform public_transport man_made leisure amenity highway=traffic_signals railway=station entrance=yes barrier=gate barrier" > temp.osm
-- ./osmconvert temp.osm --all-to-nodes --csv="name" > temp.csv
-- sort -u temp.csv > citydata/berlin_streetnames.txt
-- Check manually and delete obvious errors
+Note: osmfilter seems buggy and does not actually remove some things we want removed. That's why we need to manually remove them in the end.  
+
+- `./osmfilter berlin_cropped.osm --keep="highway=residential =primary =secondary =tertiary =unclassified" --drop="public_transport=stop_position public_transport=platform public_transport man_made boundary leisure amenity highway=traffic_signals =motorway_junction =bus_stop railway building entrance=yes barrier=gate barrier shop" > temp.osm`
+- `./osmconvert temp.osm --all-to-nodes --csv="name" > temp.csv`
+- `sort -u temp.csv > citydata/berlin_streetnames.txt`
+- Check manually and delete obvious errors. Good idea to iterate this step again after the length sort, which reveals many errors:
+- `cat citydata/berlin_streetnames.txt | awk '{ print length, $0 }' | sort -n -s | cut -d" " -f2- > citydata/berlin_streetnames_bylength.txt`
 
 #### Generate streets
 - Set cityname parameter and execute unwindbike.ipynb
@@ -40,7 +45,7 @@ Follow this order. If not noted otherwise, run commands in terminal. Examples fo
 - Set cityname parameter and execute unwindstreet.ipynb
 
 #### Generate parking spots
-- Run SVGNest with python3 -m http.server
+- Run SVGNest with `python3 -m http.server`
 - Set cityname parameter and execute parkingtosvgbike.ipynb **step by step**. This involves executing SVGNest inbetween!
 - Set cityname parameter and execute parkingtosvgcar.ipynb **step by step**. This involves executing SVGNest inbetween!
 
@@ -50,3 +55,7 @@ Follow this order. If not noted otherwise, run commands in terminal. Examples fo
 [4]: http://overpass-turbo.eu/
 [5]: https://github.com/stephanbogner/SVGNest
 [6]: http://download.geofabrik.de/
+[7]: http://wiki.openstreetmap.org/wiki/Tag:boundary%3Dadministrative#10_admin_level_values_for_specific_countries
+[8]: https://github.com/mapsme/osmctools/blob/master/osmconvert.c
+[9]: http://wiki.openstreetmap.org/wiki/Osmfilter#Download
+[10]: https://github.com/gboeing/osmnx
