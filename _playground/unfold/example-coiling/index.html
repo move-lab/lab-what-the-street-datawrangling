@@ -6,6 +6,8 @@
     <title>Coiling Example</title>
     <style>
         body{
+            margin: 0;
+            padding: 0;
             font-family: 'Helvetica Neue', sans-serif;
         }
 
@@ -33,6 +35,7 @@
             position: absolute;
             text-align: center;            
             color: #ababab;
+            transition: 0.3s;
         }
 
         #bottom{
@@ -54,16 +57,30 @@
             cursor: pointer;
         }
 
-        #map { position:fixed; top:0; bottom:0; width: vw; height: vh;}
+        #map { 
+            position:fixed; 
+            top:0; 
+            bottom:0; 
+            width: 100vw;
+            height: 100vh;
+            transition: 0.3s;
+        }
+
+        .invisible{
+            opacity: 0.001;
+        }
     </style>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.28.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.28.0/mapbox-gl.css' rel='stylesheet' />
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
     <script type="text/javascript" src="../js/unfold.js"></script>
     <script type="text/javascript" src="../js/coil.js"></script>
     <script type="text/javascript">
-        var canvas;
-        var context;
+        // var canvas;
+        // var context;
+        var map;
 
         $.easing.easeOutBounce = function (x, t, b, c, d) {
             if ((t/=d) < (1/2.75)) {
@@ -78,10 +95,22 @@
         };
 
         $( document ).ready(function() {
-            canvas = document.getElementById("canvas");
-            canvas.width = $(window).width();
-            canvas.height = 3000;
-            context = canvas.getContext("2d");
+            mapboxgl.accessToken = 'pk.eyJ1IjoiYm9nbmVyc3RlcGhhbiIsImEiOiJBMnlqbnZrIn0.YwiGRgpheNMPujZn-JBh6Q';
+            map = new mapboxgl.Map({
+                container: 'map', // container id
+                style: 'mapbox://styles/mapbox/streets-v9', //stylesheet location
+                center: [-74.50, 40], // starting position
+                zoom: 9 // starting zoom
+            });
+
+            map.on('load', function () {
+                addSource('street');
+            });
+
+            // canvas = document.getElementById("canvas");
+            // canvas.width = $(window).width();
+            // canvas.height = 3000;
+            //context = canvas.getContext("2d");
 
             $('#bottom').on('click', function(){
                 $('html, body').animate({
@@ -124,28 +153,74 @@
                 var svgCode = generateSVG(coiledStreets, meterPerPixel)
 
                 $('#svg').html(svgCode);
-                $('path#Adersleber_Weg').css('stroke', '#000');
-                $('path#Adersleber_Weg').click(function(){
+                $('path#Aalemannufer').css('stroke', '#000');
+                $('path#Aalemannufer').click(function(){
+                    var coiledStreetToUncoil = coiledStreets[1];
+                    var vectorStreetToUncoil = vectorStreets[1];
+
                     $(this).hide();
+                    $('#svg').addClass('invisible');
+                    $('#map').removeClass('invisible');
                     console.log('clicked');
-                    console.log(coiledStreets[27]);
-                    animate(vectorStreets[27], coiledStreets[27], meterPerPixel);
+                    console.log(coiledStreetToUncoil);
+
+                    var zoomLevel = getZoomLevel(coiledStreetToUncoil.origin.lat, meterPerPixel)
+                    map.setZoom(zoomLevel);
+
+                    var x = 100 + coiledStreetToUncoil.coilOrigin.x / (meterPerPixel/1000);
+                    var y = 175 + coiledStreetToUncoil.coilOrigin.y / (meterPerPixel/1000);
+
+                    var percentagePixelHor = (x / $(window).width());
+                    var percentagePixelVer = (y / $(window).height());
+                    var newCenter = [coiledStreetToUncoil.origin.lon, coiledStreetToUncoil.origin.lat];
+
+                    newCenterAt(map, newCenter, percentagePixelHor, percentagePixelVer);
+                    var bounds = [coiledStreetToUncoil.bounds.ne, coiledStreetToUncoil.bounds.sw];
+
+                    plotStreetOnMap(vectorStreetToUncoil, coiledStreetToUncoil, 0, 0);
+
+                    window.setTimeout(function(){
+                        window.setTimeout(function(){
+                            map.fitBounds(bounds, {maxZoom: zoomLevel, padding: 30, speed: 0.3});
+                        },500);
+
+                        
+                        map.on('moveend', function() {
+                            animate(vectorStreetToUncoil, coiledStreetToUncoil);
+                        })
+                    },700);
                 })
             });
         }
 
-        function animate(vectorStreet, coiledStreet, meterPerPixel){
+        function newCenterAt(map, center, fromLeft, fromTop){
+            map.setCenter(center);
+            var bounds = map.getBounds();
+            var dLat = bounds._ne.lat - bounds._sw.lat;
+            var dLon = bounds._ne.lng - bounds._sw.lng;
+
+            var offsetLat = - 0.5 + fromTop;
+            var offsetLon = - 0.5 + fromLeft;
+
+            var center = map.getCenter();
+
+            var newLat = center.lat + offsetLat * dLat;
+            var newLon = center.lng - offsetLon * dLon;
+            map.setCenter([newLon, newLat]);
+        }
+
+        function animate(vectorStreet, coiledStreet){
             var timingFactor = Math.max(coiledStreet.length * 150, 1000);
 
-            testDraw(vectorStreet, coiledStreet, 0, 0, meterPerPixel);
+            plotStreetOnMap(vectorStreet, coiledStreet, 0, 0);
 
             $({progressUnfold: 0}).delay(200).animate(
                 {progressUnfold: 1}, 
                 {duration: timingFactor*2, 
                  easing: "easeOutBounce",
                  progress: function(animation, progress) {
-                    clearCanvas();
-                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, 0, meterPerPixel);
+                    //clearCanvas();
+                    plotStreetOnMap(vectorStreet, coiledStreet, this.progressUnfold, 0);
                  },
                  complete: function (argument) {
                      $({progressStitch: 0}).delay(300).animate(
@@ -153,21 +228,21 @@
                         {duration: timingFactor*1.2, 
                          easing: "easeInOutBack",
                          progress: function(animation, progress) {
-                            clearCanvas();
-                            testDraw(vectorStreet, coiledStreet, 1, this.progressStitch, meterPerPixel);
+                            //clearCanvas();
+                            plotStreetOnMap(vectorStreet, coiledStreet, 1, this.progressStitch);
                          },
                          complete: function(){
-                            $({progressUnfold: 1, progressStitch: 1}).delay(800).animate(
-                                {progressUnfold: 0, progressStitch: 0}, 
-                                {duration: timingFactor*2, 
-                                 easing: "easeInOutCubic",
-                                 progress: function(animation, progress) {
-                                    clearCanvas();
-                                    testDraw(vectorStreet, coiledStreet, this.progressUnfold, this.progressStitch, meterPerPixel);}
-                                    , complete: function(){
-                                        //animate(vectorStreet, coiledStreet)
-                                    }
-                                })
+                            // $({progressUnfold: 1, progressStitch: 1}).delay(800).animate(
+                            //     {progressUnfold: 0, progressStitch: 0}, 
+                            //     {duration: timingFactor*2, 
+                            //      easing: "easeInOutCubic",
+                            //      progress: function(animation, progress) {
+                            //         clearCanvas();
+                            //         plotStreetOnMap(vectorStreet, coiledStreet, this.progressUnfold, this.progressStitch);}
+                            //         , complete: function(){
+                            //             //animate(vectorStreet, coiledStreet)
+                            //         }
+                            //     })
                          }
                         }
                     );
@@ -227,53 +302,97 @@
             return svgCode;
         }
 
-        function testDraw(originalStreet, coiledStreet, progressUnfold, progressRestitch, meterPerPixel){
-            var scale = meterPerPixel / 1000;
+        function plotStreetOnMap(originalStreet, coiledStreet, progressUnfold, progressRestitch){
+            var origin = {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "coordinates": [originalStreet.origin.lon, originalStreet.origin.lat]
+              }
+            };
+
+            var cursor = JSON.parse( JSON.stringify(origin) );
+            var coordinates = [];
+
             var originalGeometry = originalStreet.vectors;
             var coiledGeometry = coiledStreet.vectors;
 
-            var cursor = {
-                x:108 + coiledStreet.coilOrigin.x / scale, 
-                y:183 + coiledStreet.coilOrigin.y / scale
-            };
-
             var angleCounter = 0;
 
+            var lineStrings = [];
             for (var j = 0; j < coiledGeometry.length; j++) {
                 var angleDiff = getAngleDifference(originalGeometry[j].deltaBearing, coiledGeometry[j].deltaAngle);
                 var distanceDiff = originalGeometry[j].distance - coiledGeometry[j].distance;
 
                 var vector = coiledGeometry[j];
 
-                var distance = (vector.distance + distanceDiff * progressUnfold) / scale;
+                var distance = vector.distance + distanceDiff * progressUnfold;
                 if (originalGeometry[j].type == "translation") {
                     distance = distance * progressRestitch;
+                }
+
+                //1st coordinate
+                if (originalGeometry[j].type != "translation") {
+                    coordinates.push(cursor.geometry.coordinates);
                 }
                 
                 angleCounter += vector.deltaAngle + angleDiff * progressUnfold;
 
-                var dx = Math.sin( toRadians(angleCounter) ) * distance;
-                var dy = Math.cos( toRadians(angleCounter) ) * distance;
+                cursor = turf.destination(cursor, distance, angleCounter);
 
-                if (originalGeometry[j].type == "translation") {
-                    context.lineWidth = "1";
-                    context.strokeStyle = "rgba(0,0,0, 0)";
-                }else{
-                    context.lineWidth = "5";
-                    context.strokeStyle = "#000";
+                //2st coordinate
+                if (originalGeometry[j].type != "translation") {
+                    coordinates.push(cursor.geometry.coordinates);
                 }
 
-                context.beginPath();
-                context.moveTo(cursor.x, cursor.y);
+                //if new vector is translation
+                if (originalGeometry[j].type == "translation" && coordinates.length > 0) {
+                    lineStrings.push( turf.lineString(coordinates) );
+                    coordinates = [];
+                }
+            }
 
-                cursor.x += dx;
-                cursor.y -= dy;
+            if (coordinates.length > 0) {
+                lineStrings.push( turf.lineString(coordinates) );
+                coordinates = [];
+            }
 
-                context.lineTo(cursor.x, cursor.y);
-                context.stroke();
-                context.closePath();
-            };
+            var featureCollection = turf.featureCollection(lineStrings);
+            console.log(featureCollection);
+            map.getSource('street').setData(featureCollection);
         }
+
+
+        function addSource(name){
+            map.addSource(name, {
+                "type": "geojson",
+                "data": {
+                    "type": "Feature",
+                    "properties": {},
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [
+                            [-122.48369693756104, 37.83381888486939],
+                            [-122.48348236083984, 37.83317489144141]
+                        ]
+                    }
+                }
+            });
+            map.addLayer({
+                "id": name,
+                "type": "line",
+                "source": name,
+                "layout": {
+                    "line-join": "round",
+                    "line-cap": "round"
+                },
+                "paint": {
+                    "line-color": "#000",
+                    "line-width": 5
+                }
+            });
+        }
+
 
         // Returns coordinates of unfolded street
         //
@@ -290,16 +409,16 @@
             return output;
         }
 
-        function clearCanvas(){
-            context.clearRect(0, 0, canvas.width, canvas.height);
-        }
+        // function clearCanvas(){
+        //     context.clearRect(0, 0, canvas.width, canvas.height);
+        // }
 
         function getMeterPerPixel(lat, zoomLevel){
             return (40075016.686 * Math.abs(Math.cos(toRadians(lat))) / Math.pow(2, zoomLevel + 9));
         }
 
-        function getZoomLevel(lat, pixelPerMeter){
-            return Math.log2(40075016.686 * ( Math.cos(toRadians(lat))/pixelPerMeter )) - 9;
+        function getZoomLevel(lat, meterPerPixel){
+            return Math.log2(40075016.686 * ( Math.cos(toRadians(lat))/meterPerPixel )) - 9;
         }
 
         function toRadians(degrees) {
@@ -321,7 +440,8 @@
   <body>
     <h1>Coiling Example</h1>
     <h2>How Coiling Streets Could Work</h2> 
-    <canvas id='canvas'></canvas> 
+    <div id="map" class="invisible"></div>
+    <!-- <canvas id='canvas'></canvas>  -->
     <div id="svg">Calculating ... </br>(this will take a while)</div>
     <div id="conclusion"></div>
     <!-- <div id="bottom">↓</div> -->

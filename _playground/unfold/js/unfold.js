@@ -167,6 +167,11 @@ var unfold = (function() {
     var previousNode;
     var previousBearing;
 
+    var bounds = {
+      sw: [null, null],
+      ne: [null, null]
+    }
+
     for (var c = 0; c < components.length; c++) {
       var component = components[c];
       var paths = component;
@@ -209,6 +214,23 @@ var unfold = (function() {
               output.objectBearing = getBearing( output.origin, output.destination );
             };
 
+            //get bounds
+            if (currentNodeLocation.lon > bounds.sw[0] || bounds.sw[0] == null) {
+              bounds.sw[0] = currentNodeLocation.lon;
+            }
+
+            if (currentNodeLocation.lat > bounds.sw[1] || bounds.sw[1] == null) {
+              bounds.sw[1] = currentNodeLocation.lat;
+            }
+
+            if (currentNodeLocation.lon < bounds.ne[0] || bounds.ne[0] == null) {
+              bounds.ne[0] = currentNodeLocation.lon;
+            }
+
+            if (currentNodeLocation.lat < bounds.ne[1] || bounds.ne[1] == null) {
+              bounds.ne[1] = currentNodeLocation.lat;
+            }
+
             //Prepare to output
             var vector = {
               deltaBearing: deltaBearing,
@@ -226,6 +248,8 @@ var unfold = (function() {
         };
       };
     };
+
+    output.bounds = bounds;
     return output;
   }
 
