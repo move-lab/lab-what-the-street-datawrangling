@@ -33,7 +33,7 @@ This repository shows how to preparate data and create the visuals which were us
 - Get mongosm from [Stephan Bogner's fork][3], and in options.js of mongosm/lib, set `populateGeometry: false`. To get dependencies, run: `npm install` 
 
 ## Adding a city
-**Folder:** datapreparation. Follow this order. If not noted otherwise, run commands in terminal. Examples for Berlin.
+Follow this order. If not noted otherwise, run commands in terminal. Examples for Berlin.
 
 ### Process OSM data
 #### 1. Create geo files
@@ -75,20 +75,24 @@ out skel;`
 	- This involves executing SVGnest-batch inbetween!
 	- **If SVGNest fails** → execute `06_parkingtosvgbikealt.ipynb` instead! 
 	- In the end an SVG (all.svg) like following is created:  
-![SVG of bike parking spots](assets/bikeparkingexample.png "SVG of car parking spots")
+![SVG of bike parking spots](_assets/bikeparkingexample.png "SVG of car parking spots")
 
 - Set cityname parameter and execute `07_parkingtosvgcar.ipynb` **step by step**. 
 	- This involves executing SVGnest-batch inbetween!
 	- In the end an SVG (all.svg) like following is created (shown rotated):  
-![SVG of car parking spots](assets/carparkingexample.png "SVG of car parking spots")
+![SVG of car parking spots](_assets/carparkingexample.png "SVG of car parking spots")
 
 #### 2. Add neighborhood information to SVG
-[TBD]
+1. Open `02_data_to_svg > 08_add_neighborhood_information` and run `node index.js` to get instructions
 
 ### Generate Street Coils
+[TBD]
 
 ## Team
-[TBD]
+- **Concept:** Michael Szell ([website](http://michael.szell.net/), [@mszll](https://twitter.com/mszll)) & Stephan Bogner
+
+## Acknowledgement
+- Parking space packing using [SVGnest](http://svgnest.com/) by [Jack Qiao](https://github.com/Jack000)
 
 ## License
 [TBD]
