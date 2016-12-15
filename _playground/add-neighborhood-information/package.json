@@ -1,0 +1,14 @@
+{
+  "name": "add-districts-to-svg",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "Stephan Bogner",
+  "license": "ISC",
+  "dependencies": {
+    "turf": "3.0.14",
+    "xml2js": "0.4.17",
+    "mongodb": "2.2.16",
+    "minimist": "1.2.0"
+  }
+}
