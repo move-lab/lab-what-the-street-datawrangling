@@ -1,4 +1,0 @@
-name;type;value;laneWidth;margin2;margin;technical;proof
-Ortsverbindungsstraßen;highway;unclassified;2.75;0.0;1.00;RQ 7,5;
-Landesstraßen;highway;secondary;3.00;0.25;1.50;RQ 9,5;Landesstraße: https://www.openstreetmap.org/way/157019835
-Bundesstraße;highway;primary;3.50;0.25;1.50;RQ 10,5;
