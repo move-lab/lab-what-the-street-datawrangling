@@ -46,7 +46,7 @@ This repository shows how to preparate data and create the visuals which were us
 out skel;`
 - Load file into QGIS, save as a duplicate with correct `CRS: EPSG:4326`, and save as `berlin_boundary.poly` via `Vector > Export OSM Poly`
 - Download and unpack osm.bz2 file that contains the city from [geofabrik][6], e.g berlin-latest
-- Crop osm file according the boundary using osmconvert `./osmconvert berlin-latest.osm -B=berlin_boundary.poly --complex-ways --complete-ways -o=berlin_cropped.osm`
+- Crop osm file according the boundary using osmconvert `./osmconvert berlin-latest.osm -B=berlin_boundary.poly --drop-broken-refs -o=berlin_cropped.osm`
 
 #### 2. Load into MongoDB
 1. Load osm data into MongoDB via mongosm `node mongosm.js --max_old_space_size=8192 -db berlin_raw -f berlin_cropped.osm`
@@ -72,17 +72,17 @@ out skel;`
 #### 1. Create svgs
 1. Serve SVGnest-batch locally (e.g. `python3 -m http.server` or `python -m SimpleHTTPServer 8000`)
 - Set cityname parameter and execute `05_parkingtosvgbike.ipynb` **step by step**. 
-	- (This involves executing SVGnest-batch inbetween!) 
+	- This involves executing SVGnest-batch inbetween!
 	- **If SVGNest fails** → execute `06_parkingtosvgbikealt.ipynb` instead! 
-	- In the end a SVG like following is created:  
-![SVG of bike parking spots](datapreparation/output/viennabikeout/all_small.png "SVG of car parking spots")
+	- In the end an SVG (all.svg) like following is created:  
+![SVG of bike parking spots](assets/bikeparkingexample.png "SVG of car parking spots")
 
 - Set cityname parameter and execute `07_parkingtosvgcar.ipynb` **step by step**. 
-	- (This involves executing SVGnest-batch inbetween!)
-	- In the end a SVG like following is created (shown rotated):  
-![SVG of car parking spots](datapreparation/output/newyorkcarout/all_small.png "SVG of car parking spots")
+	- This involves executing SVGnest-batch inbetween!
+	- In the end an SVG (all.svg) like following is created (shown rotated):  
+![SVG of car parking spots](assets/carparkingexample.png "SVG of car parking spots")
 
-#### 2. Add neighborhood information to svg
+#### 2. Add neighborhood information to SVG
 [TBD]
 
 ### Generate Street Coils
