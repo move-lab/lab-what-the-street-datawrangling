@@ -76,8 +76,8 @@ function iterateOverPolygons(polygons, neighborhoods){
 					returnedResult = true;
 					resultCounter ++;
 					var properties = neighborhood.properties;
-					var name = properties.name || properties.ntaname || properties.NAME
-					//       = default         || for New York City  || for Portland
+					var name = properties.name || properties.ntaname || properties.NAME || properties.Name
+					//       = default         || for New York City  || for Portland    || for Boston
 
 					polygon.moovel_neighborhood = neighborhood.properties.name;
 					console.log('   Located in ' + neighborhood.properties.name);
