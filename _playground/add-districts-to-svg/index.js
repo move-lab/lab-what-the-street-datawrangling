@@ -13,14 +13,17 @@ init();
 function init(){
 	fileName = argv.output || "output.svg";
 
-	if (argv.districts && argv.svg) {
+	if (argv.neighborhoods && argv.svg) {
 		fs.readFile(argv.svg, function(err, data) {
 		    parser.parseString(data, function (err, result) {
 		    	var output = result;
 		    	var polygons = result.svg.polygon;
-		    	fs.readFile(argv.districts, function(err, data) {
-		    		var districts = JSON.parse( data ).features;
-				    iterateOverPolygons(polygons, districts);
+		    	fs.readFile(argv.neighborhoods, function(err, data) {
+		    		if (err) {
+		    			console.log(err);
+		    		};
+		    		var neighborhoods = JSON.parse( data ).features;
+				    iterateOverPolygons(polygons, neighborhoods);
 				    output.polygon = polygons;
 				    var xml = builder.buildObject(output);
 				    fs.writeFile(fileName, xml, function(err) {});
@@ -33,10 +36,10 @@ function init(){
 		console.log("  HOW TO RUN  ");
 		console.log('--------------');
 		console.log('');
-		console.log(" node index.js --svg yourSvgFile.svg --districts districtsGeojson.json --output berlin_districts.svg");
+		console.log(" node index.js --svg yourSvgFile.svg --neighborhoods neighborhoodsGeojson.json --output berlin_neighborhoods.svg");
 		console.log('');
 		console.log("  - svg:       The svg file you want to be altered. Needs to contain the 'moovel_centroidlatlon' meta tag");
-		console.log("  - districts: A json obtained from Overpass Turbo containing the polygons for the districts.")
+		console.log("  - neighborhoods: A json obtained from Overpass Turbo containing the polygons for the neighborhoods.")
 		console.log("  - output:    [Optional] Specify the name (and location) of the altered svg file");	
 		console.log('');
 		console.log('Exiting now!');
@@ -44,9 +47,7 @@ function init(){
 	}
 }
 
-function iterateOverPolygons(polygons, districts){
-	console.log( districts );
-
+function iterateOverPolygons(polygons, neighborhoods){
 	var resultCounter = 0;
 	var unknownParkingSpotLocations = [];
 
@@ -61,21 +62,25 @@ function iterateOverPolygons(polygons, districts){
 		var centroidPoint = turf.point(centroid);
 
 		var returnedResult = false;
-		for (var j = 0; j < districts.length; j++) {
-			var district = districts[j];
-			if (district.geometry.type == 'Polygon' || district.geometry.type == 'MultiPolygon') { //a fix that I can't write proper Overpass Queries
-				if (district.geometry.type == 'Polygon') {
-					var districtPolygon = turf.polygon( district.geometry.coordinates );	
+		for (var j = 0; j < neighborhoods.length; j++) {
+			var neighborhood = neighborhoods[j];
+			if (neighborhood.geometry.type == 'Polygon' || neighborhood.geometry.type == 'MultiPolygon') { //a fix that I can't write proper Overpass Queries
+				if (neighborhood.geometry.type == 'Polygon') {
+					var neighborhoodsPolygon = turf.polygon( neighborhood.geometry.coordinates );	
 				}else{
-					var districtPolygon = turf.multiPolygon( district.geometry.coordinates );	
+					var neighborhoodsPolygon = turf.multiPolygon( neighborhood.geometry.coordinates );	
 				}
 				
-				var isInside = turf.inside(centroidPoint, districtPolygon);
+				var isInside = turf.inside(centroidPoint, neighborhoodsPolygon);
 				if (isInside) {
 					returnedResult = true;
 					resultCounter ++;
-					polygon.moovel_district = district.properties.name;
-					console.log('   Located in ' + district.properties.name);
+					var properties = neighborhood.properties;
+					var name = properties.name || properties.ntaname || properties.NAME
+					//       = default         || for New York City  || for Portland
+
+					polygon.moovel_neighborhood = neighborhood.properties.name;
+					console.log('   Located in ' + neighborhood.properties.name);
 					break;
 				};
 			};
