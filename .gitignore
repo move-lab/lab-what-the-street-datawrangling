@@ -5,4 +5,11 @@ _playground/map-moving-city/pseudo-routing/node_modules
 _playground/get-attributes-from-streets/node_modules
 
 _playground/add-districts-to-svg/node_modules
-_playground/add-districts-to-svg/data
+
+_playground/unfold/data
+
+datapreparation/.ipynb_checkpoints
+
+datapreparation/logs
+
+datapreparation/citydata
