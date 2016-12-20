@@ -251,6 +251,7 @@
         
         drawMap(street)
 
+        $('#nextFrame').off();
         $('#nextFrame').click(function(){
             drawMap(street)
             animationCounter += 0.01;
@@ -265,11 +266,10 @@
     }
 
     function updateAnimationCounterUI(){        
-        $('#animationCounterCurrent').html( padPrecision(animationCounter) );
+        $('#animationCounterCurrent').html( padPrecision(animationCounter, 2) );
     }
 
     function padPrecision(value, wantedPrecision){
-        var wantedPrecision = 2;
         var forRounding = Math.pow(10, wantedPrecision);
         var rounded = Math.round((value + 1) * forRounding) / forRounding;
         var val = rounded;
