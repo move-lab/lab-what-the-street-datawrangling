@@ -19,13 +19,13 @@
 
         #map { position:absolute; top:0; bottom:0; width:100%; }
 
-        div .mapboxgl-ctrl-attrib{
+       /* div .mapboxgl-ctrl-attrib{
             background: white !important;
         }
 
         div .mapbox-improve-map{
             display: none;
-        }
+        }*/
 
         /* ---------------------- */
         /*       Interface        */
@@ -71,8 +71,14 @@
             margin-left: 20px;
             width: 70px;
         }
-        #interface .labelHighlight, #interface .label{
+        #interface .labelHighlight, #interface .label, #interface .label-noMargin, #interface .labelHighlight-noMargin{
             font-size: 0.8rem;
+        }
+
+        #interface .label-noMargin{
+            opacity: 0.2;
+            margin-left: 3px;
+            margin-right: 3px;
         }
 
         #interface .label{
@@ -84,6 +90,7 @@
         #interface .labelHighlight{
             margin-right: 20px;
         }
+
         #interface #streetInformation{
             margin-top: 20px;
         }
@@ -102,18 +109,19 @@
     <div id="viewWrapper">
         <div id="map"></div>
     </div>
-    <div id="interface">
+    <div id="interface" style="display:none">
         <div>
-            <button>Previous Street</button>
-            <button>Next Street</button>
-            <input type="text" placeholder="Street ID"><button>Jump</button>
+            <button onclick="previousStreet()">Previous Street</button>
+            <button onclick="nextStreet()">Next Street</button>
+            <input id="streetId" type="text" placeholder="Street ID"><button onclick="jumpToStreet()">Jump</button>
         </div>
-        <div id="streetInformation" style="display:none">
+        <div id="streetInformation">
             <span class="label">City </span><span class="labelHighlight">Berlin</span>
             <span class="label">Type </span><span class="labelHighlight">Streets</span>
+            <span class="label">ID </span><span id="wayId" class="labelHighlight">{5}</span>
             <span class="label">Street </span><span  id="wayName" class="labelHighlight">{Adlergestell}</span>
+            <span class="label">Animation</span><span id="animationCounterCurrent" class="labelHighlight-noMargin">{1}</span><span class="label-noMargin">/</span><span class="labelHighlight">{100}</span>
             <button id="nextFrame">Next Step</button>
-            <span class="label">Animation Ended? </span><span class="labelHighlight">false</span>
             <!-- <span class="label">Folder </span><span class="labelHighlight">Berlin/Streets/Adlergestell</span> -->
         </div>
     </div>
@@ -121,6 +129,10 @@
     <script type="text/javascript">
 
     var animationCounter = 0;
+    var allStreetsArray = [];
+    var allStreetsObject = {};
+    var currentStreetIndex = 0;
+
     mapboxgl.accessToken = 'pk.eyJ1IjoiYm9nbmVyc3RlcGhhbiIsImEiOiJBMnlqbnZrIn0.YwiGRgpheNMPujZn-JBh6Q';
     var map = new mapboxgl.Map({
         container: 'map', // container id
@@ -185,35 +197,97 @@
             var svgCode = coil.generateSvg(coiledStreets, meterPerPixel)
             $('#svg').html(svgCode);
 
-            var streets = {};
             for (var i = 0; i < coiledStreets.length; i++) {
                 var coiledStreet = coiledStreets[i];
                 var vectorStreet = vectorStreets[i];
-                streets[coiledStreet['_id']] = {};
-                streets[coiledStreet['_id']].to = vectorStreet;
-                streets[coiledStreet['_id']].from = coiledStreet;
+                allStreetsObject[coiledStreet['_id']] = {};
+                allStreetsObject[coiledStreet['_id']].to = vectorStreet;
+                allStreetsObject[coiledStreet['_id']].from = coiledStreet;
             };
 
-            var firstStreet = streets[first(streets)];
+            
+            for (street in allStreetsObject) {
+                allStreetsArray.push(street)
+            };
+
+            var firstStreet = allStreetsObject[ allStreetsArray[currentStreetIndex] ];
             chooseStreet(firstStreet);
         });
     }
 
+    function nextStreet(){
+        currentStreetIndex ++;
+        if (currentStreetIndex > allStreetsArray.length - 1) {
+            currentStreetIndex = 0;
+        }
+        var selection = allStreetsObject[ allStreetsArray[currentStreetIndex] ]
+        chooseStreet(selection);
+    }
+
+    function previousStreet(){
+        currentStreetIndex --;
+        if (currentStreetIndex < 0) {
+            currentStreetIndex = allStreetsArray.length - 1;
+        }
+        var selection = allStreetsObject[ allStreetsArray[currentStreetIndex] ]
+        chooseStreet(selection);
+    }
+
+    function jumpToStreet(){
+        var id = $('#streetId')[0].value;
+        if (allStreetsObject[id]) {
+            currentStreetIndex = allStreetsArray.indexOf(id);
+
+            var selection = allStreetsObject[ id ]
+            chooseStreet(selection);
+        }else{
+            alert('Unfortunately no street with this ID does exist :(');
+        }
+    }
+
     function chooseStreet(street){
         animationCounter = 0;
+        updateAnimationCounterUI();
         
         drawMap(street)
 
         $('#nextFrame').click(function(){
             drawMap(street)
-            
             animationCounter += 0.01;
             animationCounter = Math.min(animationCounter, 2.4)
+            updateAnimationCounterUI();
         })
 
         var name = street.from.tags.name.name || street.from.tags.name || "unnamed";
         $('#wayName').html(name);
-        $('#streetInformation').show();
+        $('#wayId').html(street.from["_id"]);        
+        $('#interface').show();
+    }
+
+    function updateAnimationCounterUI(){        
+        $('#animationCounterCurrent').html( padPrecision(animationCounter) );
+    }
+
+    function padPrecision(value, wantedPrecision){
+        var wantedPrecision = 2;
+        var forRounding = Math.pow(10, wantedPrecision);
+        var rounded = Math.round((value + 1) * forRounding) / forRounding;
+        var val = rounded;
+        var currentPrecision = precision(rounded);
+        if (currentPrecision == 0) {
+            val += ".";
+        };
+        for (var i = 0; i < wantedPrecision - currentPrecision; i++) {
+            val += "0";
+        }
+        return val;
+    }
+
+    function precision(a) {
+      if (!isFinite(a)) return 0;
+      var e = 1, p = 0;
+      while (Math.round(a * e) / e !== a) { e *= 10; p++; }
+      return p;
     }
 
     function drawMap(street){

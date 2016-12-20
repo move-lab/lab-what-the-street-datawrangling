@@ -17,7 +17,7 @@ var nextButtonSelector = '#nextFrame';
 createFolder(exportFolderLocation);
 
 casper.start(url)
-casper.waitUntilVisible('#streetInformation')
+casper.waitUntilVisible('#interface')
 casper.wait(6000)
 casper.then(function() {
     var wayName = this.getHTML('#wayName');
