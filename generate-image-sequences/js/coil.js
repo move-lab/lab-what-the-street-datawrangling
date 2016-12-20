@@ -3,12 +3,16 @@ var coil = (function() {
   var coil = {
     curveRadius: 5,
     width: 600 - 10,
-    padding: [200, 200]
+    padding: [100, 200]
   }
 
   function setProperties(width, curveRadius){
     coil.curveRadius = curveRadius;
     coil.width = width - curveRadius * 2;
+  }
+
+  function getPadding(){
+    return coil.padding;
   }
 
   function getOffsetFromCenterline(vectorStreet){
@@ -39,8 +43,9 @@ var coil = (function() {
         delete output.vectors
         delete output.destination
         delete output.objectBearing
+        delete output.bounds
 
-    var unfoldedStreet = getUnfoldedStreetSimple(vectorStreetDivided, 1, 5);
+    var unfoldedStreet = getUnfoldedStreetSimpleForCoiling(vectorStreetDivided, 1, 5);
     unfold.calculateAndSetObjectBearing(unfoldedStreet);
     var delta = getAngleDifference(90, unfoldedStreet.objectBearing);
 
@@ -57,6 +62,75 @@ var coil = (function() {
 
     return output;
   }
+
+  // Returns coordinates of unfolded street
+  //
+  //   progress: How far animation has 
+  //      From:  0 (start - no change)
+  //      To:    1 (end - fully unfolded and rotated that start- and endpoint are on the same y)
+  //
+  //   unfoldAmplitude: How far 
+  //     From:   0 (no unravel)
+  //     To:     Infinity (values until 30 work nicely)
+  function getUnfoldedStreetSimpleForCoiling(vectorStreet, progress, unfoldAmplitude){
+      var unfoldFactor = 1 + progress * unfoldAmplitude;
+      var output = unfold.getUnfoldedVectorStreet(vectorStreet, unfoldFactor, progress, progress);
+      return output;
+  }
+
+  function getPropertiesToSquareCoil(streetLength){
+  var threshhold = 0.000001;
+  var coilWidth = 0.0000;
+  var coilHeight;
+
+  var maxIterations = 5000;
+  var iterations = 0;
+
+  var direction = 1;
+  var detail = 1;
+
+  var difference
+
+  do{
+    coilHeight = getCoilHeight(coilWidth, streetLength)
+    //console.log('w', coilWidth, 'h', coilHeight);
+    coilWidth += 0.5 / (detail * 10) * direction
+    if(coilWidth > coilHeight && direction == 1){
+      detail ++;
+      direction = -1;
+    }
+    if(coilWidth < coilHeight && direction == -1){
+      detail ++;
+      direction = 1;
+    }
+    if (iterations > maxIterations) {
+      break;
+    };
+    iterations ++
+    difference = Math.abs(coilWidth - coilHeight)
+  }while(difference > threshhold)
+
+  return {width: coilWidth, height: coilHeight}
+}
+
+
+function getCoilHeight(coilWidth, streetLength){
+  var innerCoilWidth = coilWidth - 2 * coil.curveRadius
+  var slopeHeight = 2 * coil.curveRadius;
+  var coilCurve = coil.curveRadius * Math.PI
+  var numberOfCompleteWidths = Math.floor(streetLength / innerCoilWidth)
+
+  var slope = coilCurve + innerCoilWidth;
+  var numberOfCompleteSlopes = Math.floor(streetLength / slope)
+  var leftoverLength = streetLength - numberOfCompleteSlopes * slope
+  if (leftoverLength > innerCoilWidth) {
+    leftoverLength -= innerCoilWidth;
+  }
+  //console.log(numberOfCompleteSlopes, leftoverLength)
+  var resultingHeight = numberOfCompleteSlopes * slopeHeight;
+  //console.log('w', coilWidth ,'h', resultingHeight)
+  return resultingHeight
+}
 
   function coilGeometry(offsetFromCenterline, distanceOffset){
     updateProperties();
@@ -220,6 +294,58 @@ var coil = (function() {
     return svgCode;
   }
 
+  function generateSvg(coiledStreets, meterPerPixel){
+      var svgPieces = [];
+      for (var i = 0; i < coiledStreets.length; i++) {
+          var coiledStreet = coiledStreets[i];
+          var path = generatePath(coiledStreet, meterPerPixel);
+          svgPieces.push(path);
+      }
+
+      svgPieces.push('</svg>');
+      svgPieces.unshift('<svg width="800px" height="3000px"  viewBox="0 0 800 3000">');
+      var svgCode = svgPieces.join('');
+      return svgCode;
+  }
+
+  function generatePath(coiledStreet, meterPerPixel){
+      var scale = meterPerPixel / 1000;
+      var cursor = {
+          x: coil.padding[1]/2 + coiledStreet.coilOrigin.x / scale, 
+          y: coil.padding[0]/2 + coiledStreet.coilOrigin.y / scale
+      };
+
+      var coiledGeometry = coiledStreet.vectors;
+
+      var angleCounter = 0;
+      var pathPieces = [];
+      //var name = coiledStreet.tags.name.name || coiledStreet.tags.name || "unnamed";
+      //name = name.replace(" ", "_");
+      name = coiledStreet['_id']
+      pathPieces.push('<path id="' + name + '" stroke="#50E3C2" stroke-width="5" fill="none" d="');
+      for (var j = 0; j < coiledGeometry.length; j++) {
+          var vector = coiledGeometry[j];
+          angleCounter += vector.deltaAngle;
+          var distance = vector.distance / scale;
+          var dx = Math.sin( toRadians(angleCounter) ) * distance;
+          var dy = Math.cos( toRadians(angleCounter) ) * distance;
+
+          cursor.x += dx;
+          cursor.y -= dy;
+
+          if (j==0) {
+              pathPieces.push('M' + cursor.x + ',' + cursor.y + ' ');
+          }else{
+              pathPieces.push('L' + cursor.x + ',' + cursor.y + ' ');  
+          }
+      }
+
+      pathPieces.push('" />');
+
+      var svgCode = pathPieces.join('');
+      return svgCode;
+  }
+
 
   function updateProperties(){
     var curveCircumference = (2 * coil.curveRadius * Math.PI);
@@ -340,12 +466,14 @@ var coil = (function() {
   }
 
   return {
+    getPropertiesToSquareCoil : getPropertiesToSquareCoil,
     getOffsetFromCenterline : getOffsetFromCenterline,
     getPositionOnCoil : getPositionOnCoil,
-    getCoiledStreet : getCoiledStreet,
+    getCoiledStreet : getCoiledStreet,    
     setProperties : setProperties,
     coilGeometry : coilGeometry,
+    generateSvg : generateSvg,
+    getPadding : getPadding,
     getSvgCode : getSvgCode
   }
-
 })()

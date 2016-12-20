@@ -1,0 +1,10 @@
+
+{
+  "name": "generate-image-sequences",
+  "version": "0.0.1",
+  "description": "Animates streets or parking spaces",
+  "author": "Stephan Bogner <stephan.bogner@moovel.com>",
+  "dependencies": {
+    "casperjs": "1.1.3"
+  }
+}
