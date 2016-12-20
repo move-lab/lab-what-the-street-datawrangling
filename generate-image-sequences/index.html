@@ -171,7 +171,7 @@
 
             var debugLimitStreets = 10;
 
-            var positionOnCoilCounter = 0;
+            //var positionOnCoilCounter = 0;
             for (var i = 0; i < streets.length; i++) {
                 var street = streets[i];
                 var vectorStreet = unfold.getStreetWithVectors( street );
@@ -182,9 +182,10 @@
                 coil.setProperties(properties.width, 5)
                 
             
-                var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter);
-                positionOnCoilCounter += (coiledStreet.coilEnd - coiledStreet.coilStart)
-                positionOnCoilCounter += gapBetweeStreets;
+                //var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter);
+                var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, 0);
+                //positionOnCoilCounter += (coiledStreet.coilEnd - coiledStreet.coilStart)
+                //positionOnCoilCounter += gapBetweeStreets;
                 
                 coiledStreets.push( coiledStreet );
                 vectorStreets.push( vectorStreetDivided );
