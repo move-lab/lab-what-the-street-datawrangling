@@ -23,6 +23,7 @@
 This repository shows how to preparate data and create the visuals which were used in the project {{{lab-mobviz}}} by [moovel lab](http://lab.moovel.com/).
 
 ## Inital setup
+- Get [NodeJS][13]
 - Get [osmconvert.c][8]. Set `border__edge_M 1300004` so it can handle larger poly files. Compile: `gcc osmconvert.c -lz -O3 -o osmconvert`
 - Get [osmfilter][9]
 - Get [MongoDB][11]
@@ -85,7 +86,13 @@ out skel;`
 #### 2. Add neighborhood information to SVG
 1. Open `02_data_to_svg > 08_add_neighborhood_information` and run `node index.js` to get instructions
 
-### Generate Street Coils
+## Generate Street Coils
+[TBD]
+
+## Generate Gifs
+[TBD]
+
+## Tweet Gifs
 [TBD]
 
 ## Team
@@ -109,3 +116,4 @@ out skel;`
 [10]: https://github.com/gboeing/osmnx
 [11]: https://www.mongodb.com/
 [12]: https://github.com/stephanbogner/SVGnest-batch
+[13]: https://nodejs.org/
