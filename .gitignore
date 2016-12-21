@@ -5,15 +5,14 @@ _playground/map-moving-city/pseudo-routing/node_modules
 _playground/get-attributes-from-streets/node_modules
 
 08_add_neighborhood_information/node_modules
+08_add_neighborhood_information/export/*.svg
+08_add_neighborhood_information/data
 
 _playground/unfold/data
 
 generate-image-sequences/node_modules
-
-generate-image-sequences/export
+generate-image-sequences/export/
 
 datapreparation/.ipynb_checkpoints
-
 datapreparation/logs
-
 datapreparation/citydata

@@ -8,7 +8,7 @@ var casper   = require('casper').create({
 	}
 });
 
-var url = 'http://localhost:8000/generate-image-sequences/'
+var url = 'http://localhost:8000/'
 var exportFolderLocation = fs.workingDirectory + '/export';
 var canvas = '#viewWrapper';
 
@@ -18,7 +18,7 @@ createFolder(exportFolderLocation);
 
 casper.start(url)
 casper.waitUntilVisible('#interface')
-casper.wait(6000)
+casper.wait(6000) //because mapbox does not have a map view loaded callback ...
 casper.then(function() {
     var wayName = this.getHTML('#wayName');
     saveAnimation(this, wayName)

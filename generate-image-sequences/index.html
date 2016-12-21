@@ -132,6 +132,8 @@
     var allStreetsArray = [];
     var allStreetsObject = {};
     var currentStreetIndex = 0;
+    var initialBoundingBox = {sw:null, ne:null};
+    var targetBoundingBox = {sw:null, ne:null};
 
     mapboxgl.accessToken = 'pk.eyJ1IjoiYm9nbmVyc3RlcGhhbiIsImEiOiJBMnlqbnZrIn0.YwiGRgpheNMPujZn-JBh6Q';
     var map = new mapboxgl.Map({
@@ -152,7 +154,7 @@
 
         map.on('load', function () {
             addSource('street');
-            processFile("../unfold/data/161213_berlin_streets.json");
+            processFile("./example/161213_berlin_streets.json");
         });
     });
 
@@ -249,7 +251,13 @@
     function chooseStreet(street){
         animationCounter = 0;
         updateAnimationCounterUI();
+
+        var notUnravelled = unfold.geoJsonStreetAnimation(street.to, street.from, 0, 0)
+        var fullyUnravelled = unfold.geoJsonStreetAnimation(street.to, street.from, 1, 1);
+        initialBoundingBox = getBoundingBox(notUnravelled.features[0]);
+        targetBoundingBox = getBoundingBox(fullyUnravelled.features[0]);
         
+        console.log(initialBoundingBox, targetBoundingBox)
         drawMap(street)
 
         $('#nextFrame').off();
@@ -268,6 +276,28 @@
 
     function updateAnimationCounterUI(){        
         $('#animationCounterCurrent').html( padPrecision(animationCounter, 2) );
+    }
+
+    function getIntermediateBoundingBox(from, to, percentage){
+        var neFrom = from[0];
+        var swFrom = from[1];
+
+        var neTo = to[0];
+        var swTo = to[1];
+
+        var dxNe = neFrom[0] - neTo[0];
+        var dyNe = neFrom[1] - neTo[1];
+
+        var dxSw = swFrom[0] - swTo[0];
+        var dySw = swFrom[1] - swTo[1];
+
+        var neResultLon = neFrom[0] - dxNe * percentage;
+        var neResultLat = neFrom[1] - dyNe * percentage;
+
+        var swResultLon = swFrom[0] - dxSw * percentage;
+        var swResultLat = swFrom[1] - dySw * percentage;
+
+        return [[neResultLon, neResultLat], [swResultLon, swResultLat]];
     }
 
     function padPrecision(value, wantedPrecision){
@@ -293,31 +323,36 @@
 
     function drawMap(street){
 
+        var stage;
         if (animationCounter < 0.2) {
-            var geoJson = unfold.geoJsonStreetAnimation(street.to, street.from, 0, 0);
+            var progress = 0;
+            stage = "initialWait";
         }else if (animationCounter < 1.2) {
-            var test = animationCounter - 0.2;
-            var value = easeOutBounce(test, 0, 1, 1)    
-            var geoJson = unfold.geoJsonStreetAnimation(street.to, street.from, value, value);
+            var progress = animationCounter - 0.2;
+            stage = "unfold";
         }else if(animationCounter < 1.4){
-            var value = easeOutBounce(1, 0, 1, 1)    
-            var geoJson = unfold.geoJsonStreetAnimation(street.to, street.from, value, value);
+            var progress = 1;
+            stage = "waitAfterUnfold";
         }else{
-            var test = animationCounter - 1.4;
-            var value = easeOutBounce(test, 0, 1, 1)
-            var geoJson = unfold.geoJsonStreetAnimation(street.to, street.from, 1-value, 1-value);
+            var progress = 1 - (animationCounter - 1.4);
+            stage = "refold";
         }
-        
-        
 
-        var bbox = getBBox(geoJson.features[0]);
-        var bounds = [bbox.ne, bbox.sw];
+        var bouncyProgress = easeOutBounce(progress, 0, 1, 1)    
+        var easedProgress =  easeInOutQuad(Math.min(progress*3,1), 0, 1, 1);
 
+        if (stage == "refold") {
+            var geoJson = unfold.geoJsonStreetAnimation(street.to, street.from, easedProgress, easedProgress);
+        }else{
+            var geoJson = unfold.geoJsonStreetAnimation(street.to, street.from, bouncyProgress, bouncyProgress);
+        }
+        var bounds = getIntermediateBoundingBox([initialBoundingBox.ne, initialBoundingBox.sw], [targetBoundingBox.ne, targetBoundingBox.sw], easedProgress)
+        
         map.fitBounds(bounds, {padding: 100, duration: 0, maxZoom: 16})
         map.getSource('street').setData(geoJson);
     }
 
-    function getBBox(feature){
+    function getBoundingBox(feature){
         var coordinates = feature.geometry.coordinates;
 
         var bounds = {
@@ -363,6 +398,11 @@
             return c*(7.5625*(t-=(2.625/2.75))*t + .984375) + b;
         }
     };
+
+    function easeInOutQuad(t, b, c, d) {
+        if ((t/=d/2) < 1) return c/2*t*t + b;
+        return -c/2 * ((--t)*(t-2) - 1) + b;
+    }
 
     function addSource(name){
         map.addSource(name, {
