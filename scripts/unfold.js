@@ -1,4 +1,5 @@
-var unfold = (function() {
+var turf = require('turf');
+unfold = (function() {
   function rotateVectorStreet(vectorStreet, bearing){
     vectorStreet.vectors[0].deltaBearing += bearing;
   }
