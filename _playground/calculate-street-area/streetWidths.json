@@ -1,0 +1,109 @@
+{
+	"Germany": {
+		"highway": {
+			"motorway": {
+				"name": "Autobahn",
+				"laneWidth": 3.75,
+				"innerMargin": 0.75,
+				"outerMargin": 2.50,
+				"outestMargin": 1.50,
+				"separator": 3.50,
+				"osmLaneAverage": 10.454545454545455,
+				"osmLaneAverageAlternative": 3.6574483627171586
+			},
+			"trunk": {
+				"name": "Schnellstraße",
+				"description": "",
+				"osmLaneAverage": 10.333333333333334,
+				"osmLaneAverageAlternative": 3.325679668502206
+			},
+			"primary": {
+				"name": "Bundesstraße",
+				"description": "RQ 10,5",
+				"laneWidth": 3.50,
+				"innerMargin": 0.25,
+				"outerMargin": 1.50,
+				"outestMargin": 0.0,
+				"separator": 0,
+				"osmLaneAverage": 10.333333333333334,
+				"osmLaneAverageAlternative": 3.325679668502206,
+				"sources": []
+			},
+			"secondary": {
+				"name": "Landesstraße",
+				"description": "RQ 9,5",
+				"laneWidth": 3.00,
+				"innerMargin": 0.25,
+				"outerMargin": 1.50,
+				"outestMargin": 0,
+				"separator": 0,
+				"osmLaneAverage": 9.75925925925926,
+				"osmLaneAverageAlternative": 4.99826190873019,
+				"sources": [
+					"https://www.openstreetmap.org/way/157019835"
+				]
+			},
+			"tertiary": {
+				"name": "Kreisstraße",
+				"osmLaneAverage": 7.952747252747253,
+				"osmLaneAverageAlternative": 4.036426119318548
+			},
+			"unclassified": {
+				"name": "Ortsverbindungsstraße",
+				"description": "RQ 7,5",
+				"laneWidth": 2.75,
+				"innerMargin": 0.0,
+				"outerMargin": 1.00,
+				"outestMargin": 0,
+				"separator": 0,
+				"osmLaneAverage": 5.838181818181819,
+				"osmLaneAverageAlternative": 3.229458377283856,
+				"sources": []
+			},
+			"residential": {
+				"name": "Hauptstraße",
+				"osmLaneAverage": 5.514285714285715,
+				"osmLaneAverageAlternative": 3.619557681725583
+			},
+			"service": {
+				"name": "Zufahrtsweg",
+				"osmLaneAverage": 4.291428571428571,
+				"osmLaneAverageAlternative": 3.9763543541281483
+			},
+			"living_street": {
+				"name": "Verkehrsberuhigter Bereich",
+				"osmLaneAverage": 4.258928571428571,
+				"osmLaneAverageAlternative": 2.257124712555832
+			}
+		},
+		"unit": "meter",
+		"sources": [
+			"http://wiki.openstreetmap.org/wiki/Attributierung_von_Stra%C3%9Fen_in_Deutschland#Landstra.C3.9Fen",
+			"https://de.wikipedia.org/wiki/Richtlinien_f%C3%BCr_die_Anlage_von_Stra%C3%9Fen_%E2%80%93_Querschnitt"
+		]
+	},
+
+	"Vienna": {
+		"highway": {
+			"primary": {},
+			"secondary": {},
+			"unclassified": {},
+			"service": {
+				"name": "Zufahrtsweg"
+			},
+			"living_street": {
+				"name": "Wohnstraße"
+			}
+		},
+		"sources": []
+	},
+
+	"USA": {
+		"highway": {
+			"primary": {},
+			"secondary": {},
+			"unclassified": {}
+		},
+		"sources": []
+	}
+}
