@@ -11,8 +11,8 @@ var streetWidthsFromCountry;
 
 // Berlin: 9490,0 ha
 var areaCounter = 0;
-var areaCounterOsmAverage = 0;
-var areaCounterOsmAverageAlternative = 0;
+//var areaCounterOsmAverage = 0;
+//var areaCounterOsmAverageAlternative = 0;
 var distanceCounter = 0;
 var progressCounter = 0;
 
@@ -74,22 +74,48 @@ function processMongodb(mongoUrl) {
 
                 console.log();
                 console.log('All done');
-                console.log(Math.round(m2ToHa(areaCounter)), 'ha (researched)');
-                console.log(Math.round(m2ToHa(areaCounterOsmAverage)), 'ha (osm average)');
-                console.log(Math.round(m2ToHa(areaCounterOsmAverageAlternative)), 'ha (osm average alternative)');
+                console.log(Math.round(m2ToHa(areaCounter)), 'ha (osm average)');
+                //console.log(Math.round(m2ToHa(areaCounterOsmAverage)), 'ha (osm average)');
+                //console.log(Math.round(m2ToHa(areaCounterOsmAverageAlternative)), 'ha (osm average alternative)');
                 console.log(Math.round(distanceCounter / 1000), 'km')
                 calculateWidthOccurences();
                 console.log('breakdown', streetWidthOccurences);
             });
 
             cursor.on('data', function(doc) {
-                var laneInformation = getLaneInformation(doc);
-                if (laneInformation.highwayType) {
-                    var widthInformation = getWidthInformation(doc, laneInformation);
-                };
+                var wayType;
+                if (doc.properties.highway) {
+                    wayType = 'highway';
+                } else if (doc.properties.railway) {
+                    wayType = 'railway';
+                } else {
+                    wayType = 'irrelevant';
+                }
+                getInformationFor(wayType, doc);
             });
         }
     });
+}
+
+function getInformationFor(wayType, doc) {
+    switch (wayType) {
+        case 'highway':
+            var laneInformation = getLaneInformation(doc);
+            if (laneInformation.highwayType) {
+                var widthInformation = getWidthInformation(doc, laneInformation);
+                if (widthInformation) {
+                    doc.properties_derived.width = widthInformation.width;
+                    doc.properties_derived.area = widthInformation.area;
+                    collection.update({ _id: doc["_id"] }, doc);
+                }
+            }
+            break;
+        case 'railway':
+            break;
+
+        case 'irrelevant':
+            break;
+    }
 }
 
 function getWidthInformation(doc, laneInformation) {
@@ -98,6 +124,8 @@ function getWidthInformation(doc, laneInformation) {
     var highwayReference;
     var streetWidth;
     var streetArea;
+    var streetAreaOsmAverage;
+    var streetAreaOsmAverageAlternative;
     var consoleOutput = "";
 
     if (onlyUseHighwayTypes.indexOf(highwayTypeForComparison) != -1) {
@@ -144,24 +172,33 @@ function getWidthInformation(doc, laneInformation) {
             }
 
             streetArea = streetWidth * streetLength;
+            streetAreaOsmAverage = streetLength * laneInformation.numberOfLanes * highwayReference.osmLaneAverage;
+            streetAreaOsmAverageAlternative = streetLength * laneInformation.numberOfLanes * highwayReference.osmLaneAverageAlternative;
 
             // if (laneInformation.highwayType != 'service') {
             //     if (laneInformation.highwayType == "motorway" && laneInformation.forward == true) {
             //     }else{
             distanceCounter += streetLength;
+
             //     }
             // }
 
             areaCounter += streetArea;
-            areaCounterOsmAverage += streetLength * laneInformation.numberOfLanes * highwayReference.osmLaneAverage;
-            areaCounterOsmAverageAlternative += streetLength * laneInformation.numberOfLanes * highwayReference.osmLaneAverageAlternative;
+            areaCounterOsmAverage += streetAreaOsmAverage;
+            areaCounterOsmAverageAlternative += streetAreaOsmAverageAlternative;
 
-            consoleOutput += ' | width ' + streetWidth  + " " + streetWidthsReference.unit;
-            consoleOutput += ' | length ' + streetLength  + " " + streetWidthsReference.unit;
+            consoleOutput += ' | width ' + streetWidth + " " + streetWidthsReference.unit;
+            consoleOutput += ' | length ' + streetLength + " " + streetWidthsReference.unit;
             consoleOutput += ' | area ' + streetArea + " " + streetWidthsReference.unit + '2';
         }
 
+        var output = {
+            width: laneInformation.numberOfLanes * highwayReference.osmLaneAverage * 0.905,
+            area: streetAreaOsmAverage * 0.905
+        };
+
         process.stdout.write(consoleOutput + '                \r');
+        return output;
     } else {
         return null;
     }
