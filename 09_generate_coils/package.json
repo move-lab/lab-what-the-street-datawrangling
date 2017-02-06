@@ -1,7 +1,7 @@
 {
   "name": "generate-coils",
   "version": "1.0.0",
-  "description": "",
+  "description": "Winds up all streets and saves an svg and unravel properties as json",
   "main": "index.js",
   "author": "Stephan Bogner",
   "dependencies": {

@@ -121,12 +121,30 @@ function coilStreets(file, callback) {
                     break;
                 };
 
+
+                // Remove Redundancy
+                var coiledStreetToPush = JSON.parse(JSON.stringify(coiledStreet));
+                delete coiledStreetToPush.tags;
+                delete coiledStreetToPush['_id'];
+
+                var vectorStreetDividedToPush = JSON.parse(JSON.stringify(vectorStreetDivided));
+                delete vectorStreetDividedToPush.tags;
+                delete vectorStreetDividedToPush['_id'];
+
+                // Store
                 var toPush = {
-                    id: coiledStreet['_id'],
-                    coiled: coiledStreet,
-                    natural: vectorStreetDivided
+                    '_id': coiledStreet['_id'],
+                    'properties': {
+                        'name': coiledStreet.tags.name,
+                        'length': coiledStreet.tags.length,
+                        // 'area': coiledStreet.tags.area
+                        'area': Math.random()*900 + 600
+                    },
+                    'coiled': coiledStreetToPush,
+                    'original': vectorStreetDividedToPush
                 };
-                jsonToSave.push(toPush)
+                jsonToSave.push(toPush);
+                console.log('added ' + toPush['_id']);
             };
 
             var svgCode = coil.generateSvg(coiledStreets, meterPerPixel)
@@ -142,6 +160,7 @@ function coilStreets(file, callback) {
                 prettyB = null;
             }
 
+            console.log('Saving json');
             fs.writeFile(saveAs + ".json", JSON.stringify(jsonToSave, prettyA, prettyB), function(err) {
                 if (err) {
                     return console.log(err);
