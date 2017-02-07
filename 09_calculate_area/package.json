@@ -1,7 +1,7 @@
 {
-    "name": "calculate-street-area",
+    "name": "calculate-area",
     "version": "1.0.0",
-    "description": "",
+    "description": "Calculates the area of streets and rails",
     "main": "index.js",
     "author": "Stephan Bogner",
     "dependencies": {
