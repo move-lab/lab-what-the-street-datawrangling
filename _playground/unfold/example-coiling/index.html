@@ -58,16 +58,20 @@
         }
 
         #map { 
-            position:fixed; 
+            position: absolute; 
             top:0; 
             bottom:0; 
             width: 100vw;
             height: 100vh;
-            transition: 0.3s;
+            transition: opacity 0.3s;
+        }
+
+        #mapWrapper{
+            position: relative;
         }
 
         .invisible{
-            opacity: 0.001;
+            opacity: 0.00001;
         }
     </style>
     <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.28.0/mapbox-gl.js'></script>
@@ -75,11 +79,10 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/3.0.14/turf.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+    <script type="text/javascript" src="../js/helpers.js"></script>
     <script type="text/javascript" src="../js/unfold.js"></script>
     <script type="text/javascript" src="../js/coil.js"></script>
     <script type="text/javascript">
-        // var canvas;
-        // var context;
         var map;
 
         $.easing.easeOutBounce = function (x, t, b, c, d) {
@@ -107,11 +110,6 @@
                 addSource('street');
             });
 
-            // canvas = document.getElementById("canvas");
-            // canvas.width = $(window).width();
-            // canvas.height = 3000;
-            //context = canvas.getContext("2d");
-
             $('#bottom').on('click', function(){
                 $('html, body').animate({
                     scrollTop: $("#conclusion").offset().top
@@ -133,51 +131,73 @@
                 var coiledStreets = [];
                 var vectorStreets = [];
 
+                var debugLimitStreets = 40;
+
                 var positionOnCoilCounter = 0;
-                //for (var i = 0; i < streets.length; i++) {
-                for (var i = 0; i < 30; i++) {
+                for (var i = 0; i < streets.length; i++) {
                     coil.setProperties(widthInMeter, 5)
                     var street = streets[i];
                     var vectorStreet = unfold.getStreetWithVectors( street );
                     var vectorStreetDivided = unfold.subdivideVectorStreet(vectorStreet, 1);
-                
+
                     var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter);
                     positionOnCoilCounter += (coiledStreet.coilEnd - coiledStreet.coilStart)
                     positionOnCoilCounter += gapBetweeStreets;
-                    
+
                     coiledStreets.push( coiledStreet );
-                    console.log(i, coiledStreet.tags.name, coiledStreet)
                     vectorStreets.push( vectorStreetDivided );
+
+                    if (i > debugLimitStreets) {
+                        break;
+                    }
                 };
 
-                var svgCode = generateSVG(coiledStreets, meterPerPixel)
-
+                var svgCode = coil.generateSvg(coiledStreets, meterPerPixel)
                 $('#svg').html(svgCode);
-                $('path#Aalemannufer').css('stroke', '#000');
-                $('path#Aalemannufer').click(function(){
-                    var coiledStreetToUncoil = coiledStreets[1];
-                    var vectorStreetToUncoil = vectorStreets[1];
+
+                var streets = {};
+                for (var i = 0; i < coiledStreets.length; i++) {
+                    var coiledStreet = coiledStreets[i];
+                    var vectorStreet = vectorStreets[i];
+                    streets[coiledStreet['_id']] = {};
+                    streets[coiledStreet['_id']].from = vectorStreet;
+                    streets[coiledStreet['_id']].to = coiledStreet;
+                };
+
+                $('path').click(function(){
+                    $('#map').css('top', ($(document).scrollTop() - $('#mapWrapper').offset().top) + 'px')
+
+                    var offset = $('#mapWrapper').offset().top -  $('#map').offset().top;
+                    console.log(offset);
+
+                    console.log(this.id);
+                    var street = streets[this.id]
+                    var coiledStreetToUncoil = street.to;
+                    var vectorStreetToUncoil = street.from;
 
                     $(this).hide();
                     $('#svg').addClass('invisible');
                     $('#map').removeClass('invisible');
                     console.log('clicked');
-                    console.log(coiledStreetToUncoil);
+                    console.log(street);
 
                     var zoomLevel = getZoomLevel(coiledStreetToUncoil.origin.lat, meterPerPixel)
                     map.setZoom(zoomLevel);
 
-                    var x = 100 + coiledStreetToUncoil.coilOrigin.x / (meterPerPixel/1000);
-                    var y = 175 + coiledStreetToUncoil.coilOrigin.y / (meterPerPixel/1000);
+                    var x = coil.getPadding()[1]/2 + coiledStreetToUncoil.coilOrigin.x / (meterPerPixel/1000);
+                    var y = coil.getPadding()[0]/2 + offset + coiledStreetToUncoil.coilOrigin.y / (meterPerPixel/1000);
 
-                    var percentagePixelHor = (x / $(window).width());
-                    var percentagePixelVer = (y / $(window).height());
+                    var percentagePixelHor = (x / $('#map').width());
+                    var percentagePixelVer = (y / $('#map').height());
+
                     var newCenter = [coiledStreetToUncoil.origin.lon, coiledStreetToUncoil.origin.lat];
 
-                    newCenterAt(map, newCenter, percentagePixelHor, percentagePixelVer);
-                    var bounds = [coiledStreetToUncoil.bounds.ne, coiledStreetToUncoil.bounds.sw];
+                    centerAt(map, newCenter, percentagePixelHor, percentagePixelVer);
 
-                    plotStreetOnMap(vectorStreetToUncoil, coiledStreetToUncoil, 0, 0);
+                    var bounds = [vectorStreetToUncoil.bounds.ne, vectorStreetToUncoil.bounds.sw];
+
+                    var geoJson = unfold.geoJsonStreetAnimation(vectorStreetToUncoil, coiledStreetToUncoil, 0, 0);
+                    map.getSource('street').setData(geoJson);
 
                     window.setTimeout(function(){
                         window.setTimeout(function(){
@@ -189,38 +209,23 @@
                             animate(vectorStreetToUncoil, coiledStreetToUncoil);
                         })
                     },700);
-                })
+                });
             });
-        }
-
-        function newCenterAt(map, center, fromLeft, fromTop){
-            map.setCenter(center);
-            var bounds = map.getBounds();
-            var dLat = bounds._ne.lat - bounds._sw.lat;
-            var dLon = bounds._ne.lng - bounds._sw.lng;
-
-            var offsetLat = - 0.5 + fromTop;
-            var offsetLon = - 0.5 + fromLeft;
-
-            var center = map.getCenter();
-
-            var newLat = center.lat + offsetLat * dLat;
-            var newLon = center.lng - offsetLon * dLon;
-            map.setCenter([newLon, newLat]);
         }
 
         function animate(vectorStreet, coiledStreet){
             var timingFactor = Math.max(coiledStreet.length * 150, 1000);
 
-            plotStreetOnMap(vectorStreet, coiledStreet, 0, 0);
+            var geoJson = unfold.geoJsonStreetAnimation(vectorStreet, coiledStreet, 0, 0);
+            map.getSource('street').setData(geoJson);
 
             $({progressUnfold: 0}).delay(200).animate(
                 {progressUnfold: 1}, 
                 {duration: timingFactor*2, 
                  easing: "easeOutBounce",
                  progress: function(animation, progress) {
-                    //clearCanvas();
-                    plotStreetOnMap(vectorStreet, coiledStreet, this.progressUnfold, 0);
+                    var geoJson = unfold.geoJsonStreetAnimation(vectorStreet, coiledStreet, this.progressUnfold, 0);
+                    map.getSource('street').setData(geoJson);
                  },
                  complete: function (argument) {
                      $({progressStitch: 0}).delay(300).animate(
@@ -228,8 +233,8 @@
                         {duration: timingFactor*1.2, 
                          easing: "easeInOutBack",
                          progress: function(animation, progress) {
-                            //clearCanvas();
-                            plotStreetOnMap(vectorStreet, coiledStreet, 1, this.progressStitch);
+                            var geoJson = unfold.geoJsonStreetAnimation(vectorStreet, coiledStreet, 1, this.progressStitch);
+                            map.getSource('street').setData(geoJson);
                          },
                          complete: function(){
                             // $({progressUnfold: 1, progressStitch: 1}).delay(800).animate(
@@ -238,7 +243,8 @@
                             //      easing: "easeInOutCubic",
                             //      progress: function(animation, progress) {
                             //         clearCanvas();
-                            //         plotStreetOnMap(vectorStreet, coiledStreet, this.progressUnfold, this.progressStitch);}
+                            //         var geoJson = unfold.geoJsonStreetAnimation(vectorStreet, coiledStreet, this.progressUnfold, this.progressStitch);}
+                            //          map.getSource('street').setData(geoJson);
                             //         , complete: function(){
                             //             //animate(vectorStreet, coiledStreet)
                             //         }
@@ -249,117 +255,6 @@
                  }
                 }
             );
-        }
-
-        function generateSVG(coiledStreets, meterPerPixel){
-            var svgPieces = [];
-            for (var i = 0; i < coiledStreets.length; i++) {
-                var coiledStreet = coiledStreets[i];
-                var path = generatePath(coiledStreet, meterPerPixel);
-                svgPieces.push(path);
-            };
-
-            svgPieces.push('</svg>');
-            svgPieces.unshift('<svg width="800px" height="3000px"  viewBox="0 0 800 3000">');
-            var svgCode = svgPieces.join('');
-            return svgCode;
-        }
-
-        function generatePath(coiledStreet, meterPerPixel){
-            var scale = meterPerPixel / 1000;
-            var cursor = {
-                x:100 + coiledStreet.coilOrigin.x / scale, 
-                y:100 + coiledStreet.coilOrigin.y / scale
-            };
-
-            var coiledGeometry = coiledStreet.vectors;
-
-            var angleCounter = 0;
-            var pathPieces = [];
-            var name = coiledStreet.tags.name.name || coiledStreet.tags.name || "unnamed";
-            name = name.replace(" ", "_");
-            pathPieces.push('<path id="' + name + '" stroke="#50E3C2" stroke-width="5" fill="none" d="');
-            for (var j = 0; j < coiledGeometry.length; j++) {
-                var vector = coiledGeometry[j];
-                angleCounter += vector.deltaAngle;
-                var distance = vector.distance / scale;
-                var dx = Math.sin( toRadians(angleCounter) ) * distance;
-                var dy = Math.cos( toRadians(angleCounter) ) * distance;
-
-                cursor.x += dx;
-                cursor.y -= dy;
-
-                if (j==0) {
-                    pathPieces.push('M' + cursor.x + ',' + cursor.y + ' ');
-                }else{
-                    pathPieces.push('L' + cursor.x + ',' + cursor.y + ' ');  
-                }
-            }
-
-            pathPieces.push('" />');
-
-            var svgCode = pathPieces.join('');
-            return svgCode;
-        }
-
-        function plotStreetOnMap(originalStreet, coiledStreet, progressUnfold, progressRestitch){
-            var origin = {
-              "type": "Feature",
-              "geometry": {
-                "type": "Point",
-                "coordinates": [originalStreet.origin.lon, originalStreet.origin.lat]
-              }
-            };
-
-            var cursor = JSON.parse( JSON.stringify(origin) );
-            var coordinates = [];
-
-            var originalGeometry = originalStreet.vectors;
-            var coiledGeometry = coiledStreet.vectors;
-
-            var angleCounter = 0;
-
-            var lineStrings = [];
-            for (var j = 0; j < coiledGeometry.length; j++) {
-                var angleDiff = getAngleDifference(originalGeometry[j].deltaBearing, coiledGeometry[j].deltaAngle);
-                var distanceDiff = originalGeometry[j].distance - coiledGeometry[j].distance;
-
-                var vector = coiledGeometry[j];
-
-                var distance = vector.distance + distanceDiff * progressUnfold;
-                if (originalGeometry[j].type == "translation") {
-                    distance = distance * progressRestitch;
-                }
-
-                //1st coordinate
-                if (originalGeometry[j].type != "translation") {
-                    coordinates.push(cursor.geometry.coordinates);
-                }
-                
-                angleCounter += vector.deltaAngle + angleDiff * progressUnfold;
-
-                cursor = turf.destination(cursor, distance, angleCounter);
-
-                //2st coordinate
-                if (originalGeometry[j].type != "translation") {
-                    coordinates.push(cursor.geometry.coordinates);
-                }
-
-                //if new vector is translation
-                if (originalGeometry[j].type == "translation" && coordinates.length > 0) {
-                    lineStrings.push( turf.lineString(coordinates) );
-                    coordinates = [];
-                }
-            }
-
-            if (coordinates.length > 0) {
-                lineStrings.push( turf.lineString(coordinates) );
-                coordinates = [];
-            }
-
-            var featureCollection = turf.featureCollection(lineStrings);
-            console.log(featureCollection);
-            map.getSource('street').setData(featureCollection);
         }
 
 
@@ -393,56 +288,16 @@
             });
         }
 
-
-        // Returns coordinates of unfolded street
-        //
-        //   progress: How far animation has 
-        //      From:  0 (start - no change)
-        //      To:    1 (end - fully unfolded and rotated that start- and endpoint are on the same y)
-        //
-        //   unfoldAmplitude: How far 
-        //     From:   0 (no unravel)
-        //     To:     Infinity (values until 30 work nicely)
-        function getUnfoldedStreetSimple(vectorStreet, progress, unfoldAmplitude){
-            var unfoldFactor = 1 + progress * unfoldAmplitude;
-            var output = unfold.getUnfoldedVectorStreet(vectorStreet, unfoldFactor, progress, progress);
-            return output;
-        }
-
-        // function clearCanvas(){
-        //     context.clearRect(0, 0, canvas.width, canvas.height);
-        // }
-
-        function getMeterPerPixel(lat, zoomLevel){
-            return (40075016.686 * Math.abs(Math.cos(toRadians(lat))) / Math.pow(2, zoomLevel + 9));
-        }
-
-        function getZoomLevel(lat, meterPerPixel){
-            return Math.log2(40075016.686 * ( Math.cos(toRadians(lat))/meterPerPixel )) - 9;
-        }
-
-        function toRadians(degrees) {
-            return degrees * Math.PI / 180;
-        }
-
-        function getAngleDifference(angle1, angle2){
-            var d = angle1 - angle2
-             while (d < -180) {
-                d += 360;
-              };
-              while (d > 180) {
-                d -= 360;
-              };
-            return d;
-          }
     </script>
   </head>
   <body>
     <h1>Coiling Example</h1>
     <h2>How Coiling Streets Could Work</h2> 
-    <div id="map" class="invisible"></div>
     <!-- <canvas id='canvas'></canvas>  -->
-    <div id="svg">Calculating ... </br>(this will take a while)</div>
+    <div id="mapWrapper">
+        <div id="map" class="invisible"></div>
+        <div id="svg">Calculating ... </br>(this will take a while)</div>
+    </div>
     <div id="conclusion"></div>
     <!-- <div id="bottom">↓</div> -->
   </body>
