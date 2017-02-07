@@ -52,8 +52,7 @@ function main() {
             console.log('');
         })
     } else if (argv.dir) {
-        dir.readFiles(argv.dir,
-            {match: /.json$/},
+        dir.readFiles(argv.dir, { match: /.json$/ },
             function(err, content, next) {
                 if (err) throw err;
                 //console.log('content:', content);
@@ -91,7 +90,7 @@ function printInstructions() {
 }
 
 function coilStreets(file, callback) {
-    console.log('   [' + (counter +1) + '/' + numberOfFiles + '] Coiling ' + file);
+    console.log('   [' + (counter + 1) + '/' + numberOfFiles + '] Coiling ' + file);
     fs.readFile(file, function(err, data) {
         if (err) {
             console.log(err)
@@ -103,7 +102,8 @@ function coilStreets(file, callback) {
             //var vectorStreets = [];
 
             var positionOnCoilCounter = 0;
-            for (var i = 0; i < streets.length; i++) {
+            var numberOfStreets = streets.length;
+            for (var i = 0; i < numberOfStreets; i++) {
                 coil.setProperties(widthInMeter, 5)
                 var street = streets[i];
 
@@ -138,16 +138,20 @@ function coilStreets(file, callback) {
                         'name': coiledStreet.tags.name,
                         'length': coiledStreet.tags.length,
                         // 'area': coiledStreet.tags.area
-                        'area': Math.random()*900 + 600
+                        'area': Math.random() * 900 + 600,
                     },
                     'coiled': coiledStreetToPush,
                     'original': vectorStreetDividedToPush
                 };
+
+                if (coiledStreet.tags.neighborhood) {
+                    toPush.properties.neighborhood = coiledStreet.tags.neighborhood;
+                };
+
                 jsonToSave.push(toPush);
-                console.log('added ' + toPush['_id']);
+                console.log('      Analyzed ' + (i + 1) + '/' + numberOfStreets);
             };
 
-            var svgCode = coil.generateSvg(coiledStreets, meterPerPixel)
 
             //var name = "test";
             var name = path.basename(file, path.extname(file));
@@ -160,22 +164,34 @@ function coilStreets(file, callback) {
                 prettyB = null;
             }
 
-            console.log('Saving json');
-            fs.writeFile(saveAs + ".json", JSON.stringify(jsonToSave, prettyA, prettyB), function(err) {
-                if (err) {
-                    return console.log(err);
+            console.log('   Saving json');
+
+            var wstream = fs.createWriteStream(saveAs + '.json');
+            wstream.write('[\n');
+            var numberOfPieces = jsonToSave.length;
+            for (var i = 0; i < numberOfPieces; i++) {
+                console.log('      Saving json piece #' + (i+1) + '/' + numberOfPieces);
+                var piece = JSON.stringify(jsonToSave[i], prettyA, prettyB);
+                if (i !== 0) {
+                    wstream.write(',\n');
                 }
+                wstream.write(piece);
+            };
+            wstream.write(']');
+            wstream.end();
+            console.log('      Done');
 
-                fs.writeFile(saveAs + ".svg", svgCode, function(err) {
-                    if (err) {
-                        return console.log(err);
-                    }
-
-                    //console.log("    Coiled and saved");
-                    counter ++;
-                    callback();
-                });
-            });
+            console.log('   Saving svg');
+            var wstream2 = fs.createWriteStream(saveAs + '.svg');
+            var svgPieces = coil.generateSvgPieces(coiledStreets, meterPerPixel)
+            var numberOfSvgPieces = svgPieces.length;
+            for (var i = 0; i < numberOfSvgPieces; i++) {
+                console.log('      Saving svg piece #' + (i+1) + '/' + numberOfSvgPieces);
+                wstream2.write(svgPieces[i] + '\n');
+            }
+            wstream2.end();
+            console.log('      Done');
+            callback();
         }
     });
 }
