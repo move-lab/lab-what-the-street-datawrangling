@@ -1,0 +1,126 @@
+<canvas id="canvas" width="500" height="500"></canvas>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.3.0/simplex-noise.min.js"></script>
+<script type="text/javascript">
+var simplex = new SimplexNoise();
+
+var c = document.getElementById("canvas");
+var ctx = c.getContext("2d");
+
+var slopeRadius = 10;
+var coilWidth = 400;
+var coilLength = 6000;
+
+var slopeCircumference = slopeRadius * 2 * Math.PI;
+var slopeLength = coilWidth * 2 + slopeCircumference;
+
+var offset = {
+    top: 80,
+    left: 40
+};
+
+var mem = [];
+var previousMicroLevel;
+
+// var coordinatesIdeal = [];
+// var coordinatesWanted = [];
+// var coordinatesPossible = [];
+
+ctx.moveTo(offset.left, offset.top);
+for (var i = 0; i < coilLength; i++) {
+    var progress = i;
+    var microProgress;
+    var mode;
+    var mod = progress % slopeLength;
+    var level = Math.floor(progress / slopeLength);
+    var microLevel;
+
+    if (microLevel !== previousMicroLevel) {
+    	for (var i = 0; i < mem.length; i++) {
+    		if(mem[i][1] !== microLevel){
+    			mem[i][1] = null;	
+    		}
+
+    	};
+    }
+
+    var extralength = simplex.noise2D(progress / 80, 10) * 20;
+
+    if (mod < (coilWidth)) {
+        microProgress = mod;
+        mode = 0;
+        //console.log('0', i, mod, level);
+    } else if (mod < (coilWidth + slopeCircumference / 2)) {
+        microProgress = mod - coilWidth;
+        mode = 1;
+        //console.log('1', i, mod, level);
+    } else if (mod < (coilWidth + slopeCircumference / 2 + coilWidth)) {
+        microProgress = mod - coilWidth - slopeCircumference / 2;
+        mode = 2;
+        //console.log('2', i, mod, level);
+    } else if (mod < (coilWidth + slopeCircumference / 2 + coilWidth + slopeCircumference / 2)) {
+        microProgress = mod - coilWidth - slopeCircumference / 2 - coilWidth;
+        mode = 3;
+        //console.log('3', i, mod, level);
+    } else {
+        console.log('err');
+    }
+    //console.log(microProgress);
+
+
+    switch (mode) {
+        case 0:
+            microLevel = 0;
+            var realX = microProgress;
+            var realY = level * slopeRadius * 4 + offset.top + extralength;
+            break;
+
+        case 1:
+            var angle = (slopeCircumference / 2 - microProgress) / (slopeCircumference / 2) * Math.PI;
+            var x = Math.sin(angle) * (slopeRadius - extralength);
+            var y = Math.cos(angle) * (slopeRadius - extralength);
+            if (angle <= Math.PI / 2) {
+                microLevel = 0;
+            } else {
+                microLevel = 1;
+            }
+            var realX = x + coilWidth;
+            var realY = level * slopeRadius * 4 + offset.top + y + slopeRadius;
+            break;
+
+        case 2:
+            microLevel = 1;
+            var realX = coilWidth - microProgress;
+            var realY = level * slopeRadius * 4 + offset.top + slopeRadius * 2 - extralength;
+            break;
+
+        case 3:
+            var angle = -(slopeCircumference / 2 - microProgress) / (slopeCircumference / 2) * Math.PI;
+            var x = Math.sin(angle) * (slopeRadius + extralength);
+            var y = Math.cos(angle) * (slopeRadius + extralength);
+            if (angle <= Math.PI / 2) {
+                microLevel = 1;
+            } else {
+                microLevel = 2;
+            }
+            var realX = x;
+            var realY = level * slopeRadius * 4 + offset.top + y + slopeRadius * 3;
+            break;
+    }
+
+
+    var compareX = Math.round(realX + 5);
+    if (mem[compareX]) {
+        if (realY < mem[compareX][0] + 5) {
+            realY = mem[compareX][0] + 5;
+        };
+    };
+
+    mem[Math.round(realX + 5)] = [realY, microLevel];
+    previousMicroLevel = microLevel;
+    ctx.lineTo(offset.left + realX, realY);
+};
+
+
+
+ctx.stroke();
+</script>
