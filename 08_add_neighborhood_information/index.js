@@ -35,7 +35,11 @@ function getNeighborhoods(input) {
     } else {
         var neighborhoodsFile = input;
         getOneNeighborhood(neighborhoodsFile);
-        getSvgs(svgPath);
+        if (argv.mongodb) {
+            processForMongodb();
+        } else {
+            getSvgs(svgPath);
+        }
     }
 }
 
@@ -104,8 +108,15 @@ function getAllNeighborhoods(directory) {
         },
         function(err, files) {
             if (err) throw err;
-            console.log('finished reading files:', files);
-            getSvgs(svgPath);
+            console.log('   Finished loading neighborhood file:');
+            for (var i = 0; i < files.length; i++) {
+            	console.log( '      - ' + path.basename(files[i]) );
+            };
+            if (argv.mongodb) {
+                processForMongodb();
+            } else {
+                getSvgs(svgPath);
+            }
         });
 }
 
@@ -115,62 +126,56 @@ function processForMongodb() {
         if (err) {
             console.log('Unable to connect to the mongoDB server. Error:', err);
         } else {
-            fs.readFile(argv.neighborhoods, function(err, data) {
-                if (err) {
-                    console.log(err);
-                }
-                var resultCounter = 0;
-                var neighborhoods = JSON.parse(data).features;
-                var collection = db.collection(argv.collection);
-                collection.find({}).toArray(function(err, results) {
-                    var unknownWayLocations = [];
-                    for (var i = 0; i < results.length; i++) {
-                        var result = results[i];
-                        var nodes = result.nodes;
+            var resultCounter = 0;
+            var collection = db.collection(argv.collection);
+            collection.find({}).toArray(function(err, results) {
+                var unknownWayLocations = [];
+                for (var i = 0; i < results.length; i++) {
+                    var result = results[i];
+                    var nodes = result.nodes;
+                    var neighborhoodName;
+                    for (var node in nodes) {
+                        var coordinate = [nodes[node].lon, nodes[node].lat];
+                        neighborhoodName = getNeighborhoodName(coordinate, allNeighborhoods);
 
-                        var neighborhoodName;
-                        for (var node in nodes) {
-                            var coordinate = [nodes[node].lon, nodes[node].lat];
-                            neighborhoodName = getNeighborhoodName(coordinate, neighborhoods);
-
-                            console.log('');
-                            console.log('Way at ' + coordinate[0] + ',' + coordinate[1]);
-                            if (neighborhoodName != null) {
-                                resultCounter++;
-                                console.log('   Located in ' + neighborhoodName);
-                                result.tags.neighborhood = neighborhoodName;
-                                collection.update({ _id: result["_id"] }, result);
-                                break;
-                            }
+                        console.log('');
+                        console.log('Way at ' + coordinate[0] + ',' + coordinate[1]);
+                        if (neighborhoodName != null) {
+                            resultCounter++;
+                            console.log('   Located in ' + neighborhoodName);
+                            result.tags.neighborhood = neighborhoodName;
+                            collection.update({ _id: result["_id"] }, result);
+                            break;
                         }
+                    }
 
-                        if (neighborhoodName == null) {
-                            console.log('   No matching neighborhood found :(');
-                            unknownWayLocations.push(coordinate)
-                        };
+                    if (neighborhoodName == null) {
+                        console.log('   No matching neighborhood found :(');
+                        unknownWayLocations.push(coordinate)
                     };
+                };
 
-                    console.log('');
-                    console.log('-----');
-                    console.log('');
-                    console.log('Ways:          ' + results.length);
-                    console.log('Results found: ' + resultCounter);
-                    console.log('');
-                    console.log('Not found (' + (results.length - resultCounter) + ')')
-                    for (var i = 0; i < unknownWayLocations.length; i++) {
-                        var coordinate = unknownWayLocations[i];
-                        console.log('   ' + i + ' LatLon ' + coordinate[1] + ',' + coordinate[0]);
-                    };
-                    db.close();
+                console.log('');
+                console.log('-----');
+                console.log('');
+                console.log('Ways:          ' + results.length);
+                console.log('Results found: ' + resultCounter);
+                console.log('');
+                console.log('Not found (' + (results.length - resultCounter) + ')')
+                for (var i = 0; i < unknownWayLocations.length; i++) {
+                    var coordinate = unknownWayLocations[i];
+                    console.log('   ' + i + ' LatLon ' + coordinate[1] + ',' + coordinate[0]);
+                };
+                db.close();
 
-                    console.log('');
-                    console.log('-----');
-                    console.log('');
-                    console.log('MongoDB has been updated');
-                    console.log('');
-                    console.log('-----');
+                console.log('');
+                console.log('-----');
+                console.log('');
+                console.log('MongoDB has been updated');
+                console.log('(wait for it to close, this might take a few seconds/minutes)');
+                console.log('');
+                console.log('-----');
 
-                })
             })
         }
     });
