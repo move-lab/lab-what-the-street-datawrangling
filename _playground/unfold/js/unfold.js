@@ -27,6 +27,65 @@ var unfold = (function() {
     return meterPerPixel / meter; //e.g. you have 2 meters distance, and one pixel equals 4 meters, than it returns 0.5 pixel
   }
 
+  function geoJsonStreetAnimation(originalStreet, coiledStreet, progressUnfold, progressRestitch){
+      var origin = {
+        "type": "Feature",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [originalStreet.origin.lon, originalStreet.origin.lat]
+        }
+      };
+
+      var cursor = JSON.parse( JSON.stringify(origin) );
+      var coordinates = [];
+
+      var originalGeometry = originalStreet.vectors;
+      var coiledGeometry = coiledStreet.vectors;
+
+      var angleCounter = 0;
+
+      var lineStrings = [];
+      for (var j = 0; j < coiledGeometry.length; j++) {
+          var angleDiff = getAngleDifference(originalGeometry[j].deltaBearing, coiledGeometry[j].deltaAngle);
+          var distanceDiff = originalGeometry[j].distance - coiledGeometry[j].distance;
+
+          var vector = coiledGeometry[j];
+
+          var distance = vector.distance + distanceDiff * progressUnfold;
+          if (originalGeometry[j].type == "translation") {
+              distance = distance * progressRestitch;
+          }
+
+          //1st coordinate
+          if (originalGeometry[j].type != "translation") {
+              coordinates.push(cursor.geometry.coordinates);
+          }
+          
+          angleCounter += vector.deltaAngle + angleDiff * progressUnfold;
+
+          cursor = turf.destination(cursor, distance, angleCounter);
+
+          //2st coordinate
+          if (originalGeometry[j].type != "translation") {
+              coordinates.push(cursor.geometry.coordinates);
+          }
+
+          //if new vector is translation
+          if (originalGeometry[j].type == "translation" && coordinates.length > 0) {
+              lineStrings.push( turf.lineString(coordinates) );
+              coordinates = [];
+          }
+      }
+
+      if (coordinates.length > 0) {
+          lineStrings.push( turf.lineString(coordinates) );
+          coordinates = [];
+      }
+
+      var featureCollection = turf.featureCollection(lineStrings);
+      return featureCollection
+  }
+
   function getStreetWithCoordinates(vectorStreet){
     //preparing output
     var output = JSON.parse( JSON.stringify(vectorStreet) );
@@ -163,6 +222,7 @@ var unfold = (function() {
         delete output.components;
         delete output.nodes;
 
+    var length = 0;
     var components = street.components;
     var previousNode;
     var previousBearing;
@@ -196,6 +256,7 @@ var unfold = (function() {
 
             var bearing = getBearing( previousNodeLocation, currentNodeLocation ); //in deg
             var distance = getDistance( previousNodeLocation, currentNodeLocation ); //in km
+            length += distance;
 
             //If it is the first vector, use the globale bearing, since it compares to the y-axis
             if (c==0 && p==0 && n==1) { //if second node (first vector) of everything
@@ -250,6 +311,7 @@ var unfold = (function() {
     };
 
     output.bounds = bounds;
+    output.length = length;
     return output;
   }
 
@@ -303,6 +365,7 @@ var unfold = (function() {
     getDistanceInMeters : getDistanceInMeters,
     getStreetWithVectors : getStreetWithVectors,
     subdivideVectorStreet : subdivideVectorStreet,
+    geoJsonStreetAnimation : geoJsonStreetAnimation,
     getUnfoldedVectorStreet : getUnfoldedVectorStreet,
     getStreetWithCoordinates : getStreetWithCoordinates,
     calculateAndSetObjectBearing : calculateAndSetObjectBearing
