@@ -1,7 +1,7 @@
 {
-    "name": "add-neighborhood-information",
+    "name": "add-neighborhoods",
     "version": "1.0.0",
-    "description": "",
+    "description": "Adds the name of the neighborhood to a parking space svg or the mongodb",
     "main": "index.js",
     "author": "Stephan Bogner",
     "dependencies": {
