@@ -1,4 +1,4 @@
-# Calculate Street Area
+# Calculate Area
 ## About
 It takes information from Open Street Maps, such as lanes, lane width and lane type and from there calculates the area a street takes up.
 
