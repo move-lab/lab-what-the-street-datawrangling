@@ -19,3 +19,6 @@ generate_image_sequences/export/
 datapreparation/.ipynb_checkpoints
 datapreparation/logs
 datapreparation/citydata
+
+lib/parse-osm-units/node_modules
+scripts/node_modules
