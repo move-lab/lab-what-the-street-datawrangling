@@ -34,7 +34,7 @@ var coil = (function() {
       cursor.y -= dy;
 
       coordinates.push({x: cursor.x, y: cursor.y, unit: "km", distance: distanceCounter})
-    };
+    }
     return coordinates;
   }
 
