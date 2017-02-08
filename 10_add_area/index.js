@@ -36,8 +36,10 @@ function iterate(mongoUrl) {
 
             cursor.once('end', function() {
                 stdout('      Done');
-                db.close();
-                printSummary();
+                setTimeout(function() {
+                    db.close();
+                    printSummary();
+                }, 2000);
             });
 
             cursor.on('data', function(doc) {
@@ -46,7 +48,7 @@ function iterate(mongoUrl) {
                 var areaCounter = 0;
 
                 async.eachSeries(doc.ways, function iteratee(way, callback) {
-                    counter ++;
+                    counter++;
                     waysCollection.findOne({ '_id': way }, function(err, waysCursor) {
                         if (waysCursor.properties_derived && waysCursor.properties_derived.area) {
                             areaCounter += waysCursor.properties_derived.area;
