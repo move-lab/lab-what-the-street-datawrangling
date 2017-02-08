@@ -3,6 +3,8 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 - [About](#about)
+
+- [About](#about)
 - [Inital setup](#inital-setup)
 - [Adding a city](#adding-a-city)
   - [Process OSM data](#process-osm-data)
@@ -12,9 +14,20 @@
     - [4. Generate streets](#4-generate-streets)
   - [Generate Parking Spots](#generate-parking-spots)
     - [1. Create svgs](#1-create-svgs)
-    - [2. Add neighborhood information to svg](#2-add-neighborhood-information-to-svg)
+    - [2. Add neighborhood information to SVG/mongoDB](#2-add-neighborhood-information-to-svgmongodb)
+  - [Calculate Area for Streets/Rails](#calculate-area-for-streetsrails)
+    - [1. Calculate Area](#1-calculate-area)
+    - [2. Add Area](#2-add-area)
+  - [Find Landmark](#find-landmark)
+    - [0. Finding a landmark](#0-finding-a-landmark)
+    - [1. Tracing:](#1-tracing)
+    - [2. Area:](#2-area)
+    - [3. Convert to svg](#3-convert-to-svg)
+    - [4. Edit in Sketch](#4-edit-in-sketch)
+  - [Update Citymetadata.json](#update-citymetadatajson)
   - [Generate Street Coils](#generate-street-coils)
 - [Team](#team)
+- [Acknowledgement](#acknowledgement)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -83,17 +96,51 @@ out skel;`
 	- In the end an SVG (all.svg) like following is created (shown rotated):  
 ![SVG of car parking spots](_assets/carparkingexample.png "SVG of car parking spots")
 
-#### 2. Add neighborhood information to SVG
-1. Open `02_data_to_svg > 08_add_neighborhood_information` and run `node index.js` to get instructions
+#### 2. Add neighborhood information to SVG/mongoDB
+Open `08_add_neighborhoods` and run `node index.js` to get instructions
 
-## Generate Street Coils
-[TBD]
+### Calculate Area for Streets/Rails
+This adds size information to the mongoDB
 
-## Generate Gifs
-[TBD]
+#### 1. Calculate Area
+Open `09_calculate_area` and run `node index.js` to get instructions
 
-## Tweet Gifs
-[TBD]
+#### 2. Add Area
+Open `10_add_area` and run `node index.js` to get instructions
+
+### Find Landmark
+#### 0. Finding a landmark
+Search for a proper landmark in the city (around the size of Central Park in NY or Mt. Tabor in Portland)
+
+#### 1. Tracing
+I traced the outlines [geojson.io](http://geojson.io/), but any tool should be fine which produces .geojson
+
+#### 2. Area Size Information
+1. Import geojson to geojson.io
+2. Click on shape
+3. Select info
+4. Extract m² information and update citymetadata.json
+
+#### 3. Convert to svg
+1. Install the plugin [SimpleSVG](https://plugins.qgis.org/plugins/simplesvg/) for QGIS
+2. Open the geojson and from 'Tab', select save as svg
+3. Save both, svg and geojson to GDrive
+
+#### 4. Edit in Sketch
+1. Import svgs
+2. Scale by 45% (but also import an landmark that is already in sketch to verify if this is correct)
+3. Style like other Landmarks
+4. Simplify shape if necessary
+5. Flatten Text
+6. Export as svg
+
+### Update Citymetadata.json
+Add city information to `_data/citymetadata.json`
+**Note:** See template for structure
+
+### Generate Street Coils
+Open `11_generate_coils` and run `node index.js` to get instructions
+**Note:** Running this script will result in large file sizes
 
 ## Team
 - **Concept:** Michael Szell ([website](http://michael.szell.net/), [@mszll](https://twitter.com/mszll)) & Stephan Bogner
