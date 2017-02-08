@@ -2,6 +2,7 @@ var fs = require('fs');
 var argv = require('minimist')(process.argv.slice(2));
 var async = require('async');
 var mongodb = require('mongodb');
+var parseOsmUnits = require('../lib/parse-osm-units/parse-osm-units.js');
 
 var MongoClient = mongodb.MongoClient;
 var defaultCollectionName = "ways";
@@ -500,49 +501,53 @@ function countWidthOccurences(type, streetWidth, streetLength, laneInformation, 
     if (isNaN(highway.counting.lengthInMeter) ||  isNaN(highway.counting.widthPerLane)) {
         console.log(type, streetWidth, streetLength, laneInformation);
         process.exit();
-    };
+    }
 }
 
-function getCleanValueAsMeter(string) {
-    // Because units can be used in strings 
-    // See http://wiki.openstreetmap.org/wiki/Key:width
-
-    if (string === 'narrow') {
-        // Legacy tagging http://wiki.openstreetmap.org/wiki/Proposed_features/Narrow_width
-        return null
-    }
-
-    if (string.includes(';')) {
-        // Appears to be mistagged http://wiki.openstreetmap.org/wiki/Semi-colon_value_separator
-        return null
-    }
-
-    if (string.includes(',')) {
-        // Malformatted http://wiki.openstreetmap.org/wiki/Key:width#Incorrect_values
-        string = string.replace(',', '.');
-    }
-
-    if (string.includes(' km') || string.includes('km')) {
-        string = (string.replace(' km', '')).replace('km', '');
-        string = Number(string) * 1000;
-    } else if (string.includes(' m') || string.includes('m')) {
-        string = (string.replace(' m', '')).replace('m', '');
-    } else if (string.includes(' mi') || string.includes('mi')) {
-        string = (string.replace(' mi', '')).replace('mi', '');
-        string = Number(string) * 1609.34;
-    }
-
-    var output = string;
-
-    if (isNaN(output)) {
-        // This should never happen
-        console.log();
-        console.log(string);
-        console.log();
-        process.exit();
-    };
-    return Number(output);
+function getCleanValueAsMeter(input){
+    return parseOsmUnits.convertToDefaultUnits(input, 'distance');
 }
+
+// function getCleanValueAsMeter(string) {
+//     // Because units can be used in strings 
+//     // See http://wiki.openstreetmap.org/wiki/Key:width
+
+//     if (string === 'narrow') {
+//         // Legacy tagging http://wiki.openstreetmap.org/wiki/Proposed_features/Narrow_width
+//         return null
+//     }
+
+//     if (string.includes(';')) {
+//         // Appears to be mistagged http://wiki.openstreetmap.org/wiki/Semi-colon_value_separator
+//         return null
+//     }
+
+//     if (string.includes(',')) {
+//         // Malformatted http://wiki.openstreetmap.org/wiki/Key:width#Incorrect_values
+//         string = string.replace(',', '.');
+//     }
+
+//     if (string.includes(' km') || string.includes('km')) {
+//         string = (string.replace(' km', '')).replace('km', '');
+//         string = Number(string) * 1000;
+//     } else if (string.includes(' m') || string.includes('m')) {
+//         string = (string.replace(' m', '')).replace('m', '');
+//     } else if (string.includes(' mi') || string.includes('mi')) {
+//         string = (string.replace(' mi', '')).replace('mi', '');
+//         string = Number(string) * 1609.34;
+//     }
+
+//     var output = string;
+
+//     if (isNaN(output)) {
+//         // This should never happen
+//         console.log();
+//         console.log(string);
+//         console.log();
+//         process.exit();
+//     };
+//     return Number(output);
+// }
 
 function printInstructions() {
     console.log('');
