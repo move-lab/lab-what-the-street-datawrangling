@@ -63,7 +63,7 @@ out skel;`
 - Crop osm file according the boundary using osmconvert `./osmconvert berlin-latest.osm -B=berlin_boundary.poly --drop-broken-refs -o=berlin_cropped.osm`
 
 #### 2. Load into MongoDB
-1. Load osm data into MongoDB via mongosm `node mongosm.js --max_old_space_size=8192 -db berlin_raw -f berlin_cropped.osm`
+1. Load osm data into MongoDB via mongosm `node mongosm.js --max_old_space_size=8192 -db berlin_raw -f berlin_cropped.osm` (don't forget to run `npm install` before running the script the first time to install dependencies)
 2. Set cityname parameter (in Jupyter notebook) and execute `01_generategeometries.ipynb`
 
 #### 3. Street names
