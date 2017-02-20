@@ -1,9 +1,7 @@
-# {{{lab-mobviz}}}
+# What the Street
 ## Table of Contents
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-- [About](#about)
-
 - [About](#about)
 - [Inital setup](#inital-setup)
 - [Adding a city](#adding-a-city)
@@ -15,13 +13,14 @@
   - [Generate Parking Spots](#generate-parking-spots)
     - [1. Create svgs](#1-create-svgs)
     - [2. Add neighborhood information to SVG/mongoDB](#2-add-neighborhood-information-to-svgmongodb)
+    - [3. Add parking space size information to SVG](#3-add-parking-space-size-information-to-SVG)
   - [Calculate Area for Streets/Rails](#calculate-area-for-streetsrails)
     - [1. Calculate Area](#1-calculate-area)
     - [2. Add Area](#2-add-area)
   - [Find Landmark](#find-landmark)
     - [0. Finding a landmark](#0-finding-a-landmark)
-    - [1. Tracing:](#1-tracing)
-    - [2. Area:](#2-area)
+    - [1. Tracing](#1-tracing)
+    - [2. Area Size Information](#2-area-size-information)
     - [3. Convert to svg](#3-convert-to-svg)
     - [4. Edit in Sketch](#4-edit-in-sketch)
   - [Update Citymetadata.json](#update-citymetadatajson)
@@ -33,7 +32,7 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## About
-This repository shows how to preparate data and create the visuals which were used in the project {{{lab-mobviz}}} by [moovel lab](http://lab.moovel.com/).
+This repository shows how to preparate data and create the visuals which were used in the project 'What the Street' by [moovel lab](http://lab.moovel.com/).
 
 ## Inital setup
 - Get [NodeJS][13]
@@ -99,14 +98,19 @@ out skel;`
 #### 2. Add neighborhood information to SVG/mongoDB
 Open `08_add_neighborhoods` and run `node index.js` to get instructions
 
+#### 3. Add parking space size information to SVG
+Open `09_add_parking_space_size` and run `node index.js` to get instructions
+
 ### Calculate Area for Streets/Rails
 This adds size information to the mongoDB
 
 #### 1. Calculate Area
-Open `09_calculate_area` and run `node index.js` to get instructions
+Open `10_calculate_area` and run `node index.js` to get instructions
 
 #### 2. Add Area
-Open `10_add_area` and run `node index.js` to get instructions
+Open `11_add_area` and run `node index.js` to get instructions
+
+**Note:** Don't forget to write the results into the citymetadata.json
 
 ### Find Landmark
 #### 0. Finding a landmark
@@ -139,7 +143,7 @@ Add city information to `_data/citymetadata.json`
 **Note:** See template for structure
 
 ### Generate Street Coils
-Open `11_generate_coils` and run `node index.js` to get instructions
+Open `12_generate_coils` and run `node index.js` to get instructions
 **Note:** Running this script will result in large file sizes
 
 ## Team
