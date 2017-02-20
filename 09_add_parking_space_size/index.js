@@ -27,13 +27,19 @@ function main() {
         precision = argv.precision || defaultPrecision;
         console.log();
         console.log('   1. Connecting to mongodb (' + mongoUrl + ')');
-        MongoClient.connect(mongoUrl, function(err, db) {
+        MongoClient.connect(mongoUrl, function(err, db_derived) {
             if (err) {
-                console.log('Unable to connect to the mongoDB server. Error:', err);
+                console.log('Unable to connect to ' + mongoUrl + ' - Error:', err);
             } else {
-                console.log('      Done');
-                svgPath = argv.svg;
-                alteringSvg(svgPath, db);
+                MongoClient.connect(mongoUrlRaw, function(err, db_raw) {
+                    if (err) {
+                        console.log('Unable to connect to ' + mongoUrlRaw + ' - Error:', err);
+                    } else {
+                        console.log('      Done');
+                        svgPath = argv.svg;
+                        alteringSvg(svgPath, db_derived, db_raw);
+                    }
+                });
             }
         });
     } else {
@@ -47,7 +53,7 @@ function stdout(str) {
     process.stdout.write(str);
 }
 
-function alteringSvg(svgFile, db) {
+function alteringSvg(svgFile, db_derived, db_raw) {
     console.log();
     console.log('   2. Svg file (' + svgFile + ')');
     stdout('      Reading ...');
@@ -69,49 +75,40 @@ function alteringSvg(svgFile, db) {
                         var id = polygonContent.id;
                         stdout('      Querying Parking Space with Id ' + id);
 
-                        var collection = db.collection('ways');
+                        var collection = db_derived.collection('ways');
                         collection.findOne({ _id: parseInt(id) }, function(err, document) {
                             if (err) {
                                 console.log(err);
-                                //newPolygons.push(polygonContent);
                                 setImmediate(callback);
                             } else if (document === null) {
                                 // The parking spaces Michael added when no defined shape was present e.g. http://www.openstreetmap.org/node/2054127664
                                 stdoutappend(' - bike parking without geometry');
-                                MongoClient.connect(mongoUrlRaw, function(err, db2) {
+                                var collection_raw = db_raw.collection('nodes');
+                                collection_raw.findOne({ _id: parseInt(id) }, function(err, document) {
                                     if (err) {
-                                        console.log('Unable to connect to the mongoDB server. Error:', err);
-                                    } else {
-                                        var collection2 = db2.collection('nodes');
-                                        collection2.findOne({ _id: parseInt(id) }, function(err, document) {
-                                            if (err) {
-                                                console.log(err);
-                                            }
-
-                                            if (document === null) {
-                                                notFound.push(id);
-                                            } else {
-                                                if (document.tags && document.tags.capacity && document.tags.capacity.capacity) {
-                                                    if (isNaN(document.tags.capacity.capacity)) {
-                                                        var area = defaultNumberOfBikeParking * 1.6;
-                                                        var roundedArea = roundToDecimals(area, precision);
-                                                        polygonContent.moovel_area = roundedArea;
-                                                        stdoutappend(' - ' + roundedArea);
-                                                    }else{
-                                                        var area = document.tags.capacity.capacity*1.6; // m^2 (bikeparkw = 0.8, bikeparkh = 2)
-                                                        var roundedArea = roundToDecimals(area, precision);
-                                                        polygonContent.moovel_area = roundedArea;
-                                                        stdoutappend(' - ' + roundedArea);
-                                                    }
-
-                                                }
-                                            }
-
-                                            // newPolygons.push(polygonContent);
-                                            db2.close();
-                                            setImmediate(callback);
-                                        });
+                                        console.log(err);
                                     }
+
+                                    if (document === null) {
+                                        notFound.push(id);
+                                    } else {
+                                        if (document.tags && document.tags.capacity && document.tags.capacity.capacity) {
+                                            if (isNaN(document.tags.capacity.capacity)) {
+                                                var area = defaultNumberOfBikeParking * 1.6;
+                                                parkingSpaceAreaCounter += area;
+                                                var roundedArea = roundToDecimals(area, precision);
+                                                polygonContent.moovel_area = roundedArea;
+                                                stdoutappend(' - ' + roundedArea);
+                                            } else {
+                                                var area = document.tags.capacity.capacity * 1.6; // m^2 (bikeparkw = 0.8, bikeparkh = 2)
+                                                parkingSpaceAreaCounter += area;
+                                                var roundedArea = roundToDecimals(area, precision);
+                                                polygonContent.moovel_area = roundedArea;
+                                                stdoutappend(' - ' + roundedArea);
+                                            }
+                                        }
+                                    }
+                                    setImmediate(callback);
                                 });
                             } else {
                                 if (document.properties_derived && document.properties_derived.area) {
@@ -126,14 +123,14 @@ function alteringSvg(svgFile, db) {
                                     stdoutappend(' - ' + roundedArea);
                                     polygonContent.moovel_area = roundedArea;
                                 }
-                                // newPolygons.push(polygonContent);
                                 setImmediate(callback);
                             }
                         });
                     },
                     function() {
                         stdout('      Done');
-                        db.close();
+                        db_raw.close();
+                        db_derived.close();
 
                         var xml = builder.buildObject(output);
                         xml = xml.replace('<root>\n  ', '');
@@ -167,7 +164,7 @@ function printSummary() {
 
     console.log();
     console.log('   Number of Parking Spaces: ' + parkingSpaceCounter);
-    console.log('   Combined Area: ' + parkingSpaceAreaCounter);
+    console.log('   Combined Area: ' + roundToDecimals(parkingSpaceAreaCounter, 2));
     console.log();
     console.log('   IMPORTANT:');
     console.log('   Add both numbers above to the city json metadata');
