@@ -47,102 +47,6 @@
             }
         }
     },
-
-    "berlin": {
-        "name": "Berlin",
-        "country": "Germany",
-        "boundingBox": [52.33812, 13.0884, 52.675499, 13.76134],
-        "modalsplit": {
-            "foot": 0.29,
-            "bike": 0.15,
-            "public": 0.26,
-            "car": 0.30
-        },
-        "streets": {
-            "longestNames": [
-                "Hohenschönhausener Rhinstraßenbrücke",
-                "Anneliese-und-Georg-Groscurth-Platz",
-                "Marie-Elisabeth-von-Humboldt-Straße"
-            ],
-            "staffpicks": [
-                "Adlergestell",
-                "Havelchaussee",
-                "Kurfürstendamm"
-            ]
-        },
-        "population": 3502000,
-        "cars": 12000000,
-        "landmark": {
-            "name": "Tempelhofer Feld",
-            "area": 2412477
-        },
-        "sources": {
-            "cars": "http://www.visitberlin.de/en/article/facts-and-figures",
-            "onStreetParkingSpots": "http://www.stadtentwicklung.berlin.de/verkehr/politik_planung/strassen_kfz/parkraum/"
-        },
-        "parking": {
-            "car": {
-                "onStreet": {
-                    "number": 103210
-                },
-                "offStreet": {
-                    "number": 0,
-                    "area": 0
-                }
-            },
-            "bike": {
-                "number": 0,
-                "area": 0
-            }
-        }
-    },
-    "newyork": {
-        "name": "New York City",
-        "country": "USA",
-        "boundingBox": [40.496044, -74.255735, 40.915256, -73.700272],
-        "modalsplit": {
-            "foot": 0.10,
-            "bike": 0.01,
-            "public": 0.55,
-            "car": 0.29
-        },
-        "streets": {
-            "longestNames": [
-                "Whitestone Expressway South Service Road",
-                "Manhattan Bridge lower level (reversible)",
-                "Whitestone Expressway Service Road West"
-            ],
-            "staffPicks": [
-                "Broadway",
-                "Riverside Drive",
-                "Belt Parkway"
-            ]
-        },
-        "population": 8406000,
-        "cars": 0,
-        "landmark": {
-            "name": "Central Park",
-            "area": 3504491
-        },
-        "sources": {
-            "onStreetParkingSpots": "http://www.streetsblog.org/2011/03/22/new-york-has-81875-metered-parking-spaces-and-millions-of-free-ones/"
-        },
-        "parking": {
-            "car": {
-                "onStreet": {
-                    "number": 3900000
-                },
-                "offStreet": {
-                    "number": 0,
-                    "area": 0
-                }
-            },
-            "bike": {
-                "number": 0,
-                "area": 0
-            }
-        }
-    },
     "amsterdam": {
         "name": "Amsterdam",
         "country": "Netherlands",
@@ -185,13 +89,108 @@
                     "number": 265225
                 },
                 "offStreet": {
-                    "number": 0,
-                    "area": 0
+                    "number": 683,
+                    "area": 1554865.51
                 }
             },
             "bike": {
-                "number": 0,
-                "area": 0
+                "number": 227,
+                "area": 29590.42
+            }
+        }
+    },
+    "berlin": {
+        "name": "Berlin",
+        "country": "Germany",
+        "boundingBox": [52.33812, 13.0884, 52.675499, 13.76134],
+        "modalsplit": {
+            "foot": 0.29,
+            "bike": 0.15,
+            "public": 0.26,
+            "car": 0.30
+        },
+        "streets": {
+            "longestNames": [
+                "Hohenschönhausener Rhinstraßenbrücke",
+                "Anneliese-und-Georg-Groscurth-Platz",
+                "Marie-Elisabeth-von-Humboldt-Straße"
+            ],
+            "staffpicks": [
+                "Adlergestell",
+                "Havelchaussee",
+                "Kurfürstendamm"
+            ]
+        },
+        "population": 3502000,
+        "cars": 12000000,
+        "landmark": {
+            "name": "Tempelhofer Feld",
+            "area": 2412477
+        },
+        "sources": {
+            "cars": "http://www.visitberlin.de/en/article/facts-and-figures",
+            "onStreetParkingSpots": "http://www.stadtentwicklung.berlin.de/verkehr/politik_planung/strassen_kfz/parkraum/"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 103210
+                },
+                "offStreet": {
+                    "number": 4917,
+                    "area": 8156098.06
+                }
+            },
+            "bike": {
+                "number": 1653,
+                "area": 46532.7
+            }
+        }
+    },
+    "newyork": {
+        "name": "New York City",
+        "country": "USA",
+        "boundingBox": [40.496044, -74.255735, 40.915256, -73.700272],
+        "modalsplit": {
+            "foot": 0.10,
+            "bike": 0.01,
+            "public": 0.55,
+            "car": 0.29
+        },
+        "streets": {
+            "longestNames": [
+                "Whitestone Expressway South Service Road",
+                "Manhattan Bridge lower level (reversible)",
+                "Whitestone Expressway Service Road West"
+            ],
+            "staffPicks": [
+                "Broadway",
+                "Riverside Drive",
+                "Belt Parkway"
+            ]
+        },
+        "population": 8406000,
+        "cars": 0,
+        "landmark": {
+            "name": "Central Park",
+            "area": 3504491
+        },
+        "sources": {
+            "onStreetParkingSpots": "http://www.streetsblog.org/2011/03/22/new-york-has-81875-metered-parking-spaces-and-millions-of-free-ones/"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 3900000
+                },
+                "offStreet": {
+                    "number": 1435,
+                    "area": 6438190.23
+                }
+            },
+            "bike": {
+                "number": 4636,
+                "area": 25943.94
             }
         }
     },
@@ -233,13 +232,13 @@
                     "number": 0
                 },
                 "offStreet": {
-                    "number": 0,
-                    "area": 0
+                    "number": 1470,
+                    "area": 2071356.74
                 }
             },
             "bike": {
-                "number": 0,
-                "area": 0
+                "number": 474,
+                "area": 12050.66
             }
         }
     },
@@ -281,13 +280,13 @@
                     "number": 0
                 },
                 "offStreet": {
-                    "number": 0,
-                    "area": 0
+                    "number": 1628,
+                    "area": 3256151.80
                 }
             },
             "bike": {
-                "number": 0,
-                "area": 0
+                "number": 2218,
+                "area": 14544.49
             }
         }
     },
@@ -329,13 +328,13 @@
                     "number": 0
                 },
                 "offStreet": {
-                    "number": 0,
-                    "area": 0
+                    "number": 2731,
+                    "area": 10718240.38
                 }
             },
             "bike": {
-                "number": 0,
-                "area": 0
+                "number": 94,
+                "area": 2139.04
             }
         }
     },
@@ -377,13 +376,13 @@
                     "number": 280000
                 },
                 "offStreet": {
-                    "number": 0,
-                    "area": 0
+                    "number": 666,
+                    "area": 1644303.23
                 }
             },
             "bike": {
-                "number": 0,
-                "area": 0
+                "number": 141,
+                "area": 2079.75
             }
         }
     },
@@ -425,13 +424,13 @@
                     "number": 0
                 },
                 "offStreet": {
-                    "number": 0,
-                    "area": 0
+                    "number": 296,
+                    "area": 1016707.35
                 }
             },
             "bike": {
-                "number": 0,
-                "area": 0
+                "number": 45,
+                "area": 882.19
             }
         }
     },
@@ -473,13 +472,13 @@
                     "number": 0
                 },
                 "offStreet": {
-                    "number": 0,
-                    "area": 0
+                    "number": 1749,
+                    "area": 3246050.9
                 }
             },
             "bike": {
-                "number": 0,
-                "area": 0
+                "number": 1215,
+                "area": 26755.39
             }
         }
     }
