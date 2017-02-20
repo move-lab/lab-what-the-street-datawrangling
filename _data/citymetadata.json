@@ -5,7 +5,6 @@
         "boundingBox": [52.33812, 13.0884, 52.675499, 13.76134],
         "population": 3502000,
         "cars": 12000000,
-        "onStreetParkingSpots": 103210,
         "modalSplit": {
             "foot": 0.29,
             "bike": 0.15,
@@ -24,7 +23,6 @@
                 "Kurfürstendamm"
             ]
         },
-
         "landmark": {
             "name": "Landmark name",
             "area": 0
@@ -32,6 +30,21 @@
         "sources": {
             "cars": "url-to-source",
             "onStreetParkingSpots": "url-to-source"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 0
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
 
@@ -39,7 +52,6 @@
         "name": "Berlin",
         "country": "Germany",
         "boundingBox": [52.33812, 13.0884, 52.675499, 13.76134],
-        "onStreetParkingSpots": 103210,
         "modalsplit": {
             "foot": 0.29,
             "bike": 0.15,
@@ -67,13 +79,27 @@
         "sources": {
             "cars": "http://www.visitberlin.de/en/article/facts-and-figures",
             "onStreetParkingSpots": "http://www.stadtentwicklung.berlin.de/verkehr/politik_planung/strassen_kfz/parkraum/"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 103210
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "newyork": {
         "name": "New York City",
         "country": "USA",
         "boundingBox": [40.496044, -74.255735, 40.915256, -73.700272],
-        "onStreetParkingSpots": 3900000,
         "modalsplit": {
             "foot": 0.10,
             "bike": 0.01,
@@ -100,13 +126,27 @@
         },
         "sources": {
             "onStreetParkingSpots": "http://www.streetsblog.org/2011/03/22/new-york-has-81875-metered-parking-spaces-and-millions-of-free-ones/"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 3900000
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "amsterdam": {
         "name": "Amsterdam",
         "country": "Netherlands",
         "boundingBox": [52.3216, 4.7685, 52.4251, 5.0173],
-        "onStreetParkingSpots": 265225,
         "modalsplit": {
             "foot": 0.04,
             "bike": 0.40,
@@ -134,13 +174,31 @@
         "sources": {
             "onStreetParkingSpots": "http://dirkmjk.nl/nl/2016/06/amsterdam-heeft-ruimte-voor-nog-eens-21-miljoen-fietsenrekken",
             "cars": ""
+        },
+        "offStreetCarParking": {
+            "area": 1554865.5158945036,
+            "number": 683
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 265225
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "stuttgart": {
         "name": "Stuttgart",
         "country": "Germany",
         "boundingBox": [48.46, 8.79, 48.93, 9.50],
-        "onStreetParkingSpots": 0,
         "modalsplit": {
             "foot": 0.13,
             "bike": 0.04,
@@ -168,13 +226,27 @@
         "sources": {
             "onStreetParkingSpots": "",
             "cars": "http://www.stuttgarter-nachrichten.de/inhalt.rekord-bei-zulassungen-stuttgarter-fahren-mehr-aufs-auto-ab-als-je-zuvor.2962ab51-c57f-4b01-8fb2-a5a49f94b802.html"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 0
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "portland": {
         "name": "Portland",
         "country": "USA",
         "boundingBox": [45.4325, -122.8367, 45.6531, -122.4721],
-        "onStreetParkingSpots": 0,
         "modalsplit": {
             "foot": 0.06,
             "bike": 0.06,
@@ -202,13 +274,27 @@
         "sources": {
             "onStreetParkingSpots": "",
             "cars": "http://www.pressherald.com/2012/07/25/portland-at-forefront-of-decline-in-car-ownership/"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 0
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "losangeles": {
         "name": "Los Angeles",
         "country": "USA",
         "boundingBox": [33.6934949565, -118.6798095703, 34.3513728973, -118.123626709],
-        "onStreetParkingSpots": 0,
         "modalsplit": {
             "foot": 0.03,
             "bike": 0.01,
@@ -225,7 +311,7 @@
                 "Mount Hollywood Drive",
                 "Mulholland Drive",
                 "Vista del Valle Drive"
-            ],
+            ]
         },
         "population": 3884000,
         "cars": 2100000,
@@ -236,13 +322,27 @@
         "sources": {
             "cars": "",
             "onStreetParkingSpots": "http://la.streetsblog.org/2010/12/13/density-car-ownership-and-what-it-means-for-the-future-of-los-angeles/"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 0
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "sanfrancisco": {
         "name": "San Francisco",
         "country": "USA",
         "boundingBox": [37.6040, -123.0137, 37.8324, -122.3549],
-        "onStreetParkingSpots": 280000,
         "modalsplit": {
             "foot": 0.10,
             "bike": 0.03,
@@ -259,7 +359,7 @@
                 "Lombard Street",
                 "Lincoln Boulevard",
                 "Doyle Drive"
-            ],
+            ]
         },
         "population": 837442,
         "cars": 379898,
@@ -269,14 +369,28 @@
         },
         "sources": {
             "cars": "http://www.7x7.com/parking-quiz-answer-sf-cars-vs-parking-spaces-who-wins-1781011859.html",
-            "onStreetParkingSpots": "http://sf.streetsblog.org/2010/03/29/san-francisco-first-city-in-the-nation-to-count-its-parking-spaces/",
+            "onStreetParkingSpots": "http://sf.streetsblog.org/2010/03/29/san-francisco-first-city-in-the-nation-to-count-its-parking-spaces/"
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 280000
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "boston": {
         "name": "Boston",
         "country": "USA",
         "boundingBox": [42.2071592425, -71.2120056152, 42.3969802856, -70.8618164062],
-        "onStreetParkingSpots": 0,
         "modalsplit": {
             "foot": 0.14,
             "bike": 0.02,
@@ -293,7 +407,7 @@
                 "Massachusetts Avenue",
                 "Boylston Street",
                 "Atlantic Avenue"
-            ],
+            ]
         },
         "population": 645966,
         "cars": 0,
@@ -304,13 +418,27 @@
         "sources": {
             "cars": "",
             "onStreetParkingSpots": ""
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 0
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     },
     "vienna": {
         "name": "Vienna",
         "country": "Austria",
         "boundingBox": [48.109723627, 16.1595153809, 48.3316042807, 16.5934753418],
-        "onStreetParkingSpots": 0,
         "modalsplit": {
             "foot": 0.26,
             "bike": 0.07,
@@ -327,7 +455,7 @@
                 "Höhenstraße",
                 "Cobenzlgasse",
                 "Gaußplatz"
-            ],
+            ]
         },
         "population": 1741000,
         "cars": 844911,
@@ -338,6 +466,21 @@
         "sources": {
             "cars": "https://www.wien.gv.at/statistik/verkehr-wohnen/kfz/",
             "onStreetParkingSpots": ""
+        },
+        "parking": {
+            "car": {
+                "onStreet": {
+                    "number": 0
+                },
+                "offStreet": {
+                    "number": 0,
+                    "area": 0
+                }
+            },
+            "bike": {
+                "number": 0,
+                "area": 0
+            }
         }
     }
 }

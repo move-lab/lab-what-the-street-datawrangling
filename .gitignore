@@ -8,14 +8,18 @@ _playground/calculate-street-area/node_modules
 08_add_neighborhoods/export/*.svg
 08_add_neighborhoods/data
 
-09_calculate_area/node_modules
+09_add_parking_space_size/node_modules
+09_add_parking_space_size/export/*.svg
+09_add_parking_space_size/data
 
-10_add_area/node_modules
+10_calculate_area/node_modules
 
-11_generate_coils/data
-11_generate_coils/export/*.json
-11_generate_coils/export/*.svg
-11_generate_coils/node_modules
+11_add_area/node_modules
+
+12_generate_coils/data
+12_generate_coils/export/*.json
+12_generate_coils/export/*.svg
+12_generate_coils/node_modules
 
 generate_image_sequences/node_modules
 generate_image_sequences/export/
