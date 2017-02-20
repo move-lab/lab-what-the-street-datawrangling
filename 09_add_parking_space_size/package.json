@@ -1,0 +1,13 @@
+{
+    "name": "add-parking_space_size",
+    "version": "1.0.0",
+    "description": "Adds the size of a parking size from the mongodb to the svg polygon",
+    "main": "index.js",
+    "author": "Stephan Bogner",
+    "dependencies": {
+        "async": "2.0.1",
+        "xml2js": "0.4.17",
+        "mongodb": "2.2.16",
+        "minimist": "1.2.0"
+    }
+}
