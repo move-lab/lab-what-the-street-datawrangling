@@ -8,7 +8,7 @@ var xml2js = require('xml2js');
 var mongodb = require('mongodb');
 
 var parser = new xml2js.Parser();
-var builder = new xml2js.Builder();
+var builder = new xml2js.Builder({ headless: true });
 var MongoClient = mongodb.MongoClient;
 
 //async.waterfall()
@@ -44,54 +44,14 @@ function getNeighborhoods(input) {
 }
 
 function getSvgs(input) {
-    // if (fs.lstatSync(input).isDirectory()) {
-    //     var svgDirectory = input;
-    //     generateMultipleSvg(svgDirectory);
-    // } else {
     var svgFile = input;
     generateSvg(svgFile, allNeighborhoods);
-    //}
 }
-
-// init();
-
-// function init(){
-// 	if (argv.svg && argv.mongodb) {
-// 		console.log('Please use either --svg or --mongodb, not both');
-// 		printInstructions();
-// 	}else if ((argv.neighborhoods || argv.neighbourhoods) && argv.mongodb && argv.collection) {
-// 		processForMongodb();
-// 	}else if ((argv.neighborhoods || argv.neighbourhoods) && argv.svg) {
-// 		var folderOrFile = path.basename(argv.svg).split(".");
-// 		console.log(folderOrFile);
-// 		if (folderOrFile.length == 1) {
-// 			console.log('Iterate over folder');
-// 		}else{
-// 			if (argv.neighborhoods) {
-// 			var neighborhoodFile = argv.neighborhoods
-// 			}else{
-// 				var neighborhoodFile = argv.neighbourhoods
-// 			}
-// 			var svgFile = argv.svg;
-// 			processSvg(svgFile, neighborhoodFile);
-// 		}
-
-// 	}else{
-// 		printInstructions();
-// 	}
-// }
 
 function getOneNeighborhood(file, callback) {
     var data = fs.readFileSync(file);
-    //, function(err, data) {
-    // if (err) {
-    // 	callback(err)
-    // }else{
     var neighborhoods = JSON.parse(data).features;
     allNeighborhoods.push(neighborhoods)
-        //callback(null, neighborhoods)
-        //}
-        //});
 }
 
 function getAllNeighborhoods(directory) {
@@ -102,15 +62,13 @@ function getAllNeighborhoods(directory) {
             if (err) throw err;
             var neighborhoods = JSON.parse(content).features;
             allNeighborhoods.push(neighborhoods)
-
-            //console.log('content:', content);
             next();
         },
         function(err, files) {
             if (err) throw err;
             console.log('   Finished loading neighborhood file:');
             for (var i = 0; i < files.length; i++) {
-            	console.log( '      - ' + path.basename(files[i]) );
+                console.log('      - ' + path.basename(files[i]));
             };
             if (argv.mongodb) {
                 processForMongodb();
@@ -191,8 +149,10 @@ function generateSvg(svgFile, neighborhoods, callback) {
             var polygons = result.svg.polygon;
             iterateOverPolygons(polygons, neighborhoods);
 
-            output.polygon = polygons;
+            //output.polygon = polygons;
             var xml = builder.buildObject(output);
+            xml = xml.replace('<root>\n  ', '');
+            xml = xml.replace('\n</root>', '');
             saveSvg(svgFile, xml);
         });
     });
