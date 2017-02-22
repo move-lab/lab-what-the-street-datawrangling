@@ -79,10 +79,6 @@
             "onStreetParkingSpots": "http://dirkmjk.nl/nl/2016/06/amsterdam-heeft-ruimte-voor-nog-eens-21-miljoen-fietsenrekken",
             "cars": ""
         },
-        "offStreetCarParking": {
-            "area": 1554865.5158945036,
-            "number": 683
-        },
         "parking": {
             "car": {
                 "onStreet": {
@@ -90,12 +86,14 @@
                 },
                 "offStreet": {
                     "number": 683,
-                    "area": 1554865.51
+                    "area": 1554865.51,
+                    "svgHeight": 3715
                 }
             },
             "bike": {
                 "number": 227,
-                "area": 29590.42
+                "area": 29590.42,
+                "svgHeight": 103
             }
         }
     },
@@ -138,12 +136,14 @@
                 },
                 "offStreet": {
                     "number": 4917,
-                    "area": 8156098.06
+                    "area": 8156098.06,
+                    "svgHeight": 20584
                 }
             },
             "bike": {
                 "number": 1653,
-                "area": 46532.7
+                "area": 46532.7,
+                "svgHeight": 233
             }
         }
     },
@@ -185,12 +185,14 @@
                 },
                 "offStreet": {
                     "number": 1435,
-                    "area": 6438190.23
+                    "area": 6438190.23,
+                    "svgHeight": 9758
                 }
             },
             "bike": {
                 "number": 4636,
-                "area": 25943.94
+                "area": 25943.94,
+                "svgHeight": 322
             }
         }
     },
@@ -233,12 +235,14 @@
                 },
                 "offStreet": {
                     "number": 1470,
-                    "area": 2071356.74
+                    "area": 2071356.74,
+                    "svgHeight": 4465
                 }
             },
             "bike": {
                 "number": 474,
-                "area": 12050.66
+                "area": 12050.66,
+                "svgHeight": 79
             }
         }
     },
@@ -281,12 +285,14 @@
                 },
                 "offStreet": {
                     "number": 1628,
-                    "area": 3256151.80
+                    "area": 3256151.80,
+                    "svgHeight": 6016
                 }
             },
             "bike": {
                 "number": 2218,
-                "area": 14544.49
+                "area": 14544.49,
+                "svgHeight": 169
             }
         }
     },
@@ -329,12 +335,14 @@
                 },
                 "offStreet": {
                     "number": 2731,
-                    "area": 10718240.38
+                    "area": 10718240.38,
+                    "svgHeight": 14180
                 }
             },
             "bike": {
                 "number": 94,
-                "area": 2139.04
+                "area": 2139.04,
+                "svgHeight": 14
             }
         }
     },
@@ -377,12 +385,14 @@
                 },
                 "offStreet": {
                     "number": 666,
-                    "area": 1644303.23
+                    "area": 1644303.23,
+                    "svgHeight": 2546
                 }
             },
             "bike": {
                 "number": 141,
-                "area": 2079.75
+                "area": 2079.75,
+                "svgHeight": 16
             }
         }
     },
@@ -425,12 +435,14 @@
                 },
                 "offStreet": {
                     "number": 296,
-                    "area": 1016707.35
+                    "area": 1016707.35,
+                    "svgHeight": 1695
                 }
             },
             "bike": {
                 "number": 45,
-                "area": 882.19
+                "area": 882.19,
+                "svgHeight": 12
             }
         }
     },
@@ -473,12 +485,14 @@
                 },
                 "offStreet": {
                     "number": 1749,
-                    "area": 3246050.9
+                    "area": 3246050.9,
+                    "svgHeight": 6987
                 }
             },
             "bike": {
                 "number": 1215,
-                "area": 26755.39
+                "area": 26755.39,
+                "svgHeight": 146
             }
         }
     }
