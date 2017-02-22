@@ -21,6 +21,12 @@ function centerAt(map, center, fractionFromLeft, fractionFromTop){
     map.setCenter([newLon, newLat]);
 }
 
+function roundToDecimals(value, numberOfDecimals) {
+    var divide = Math.pow(10, numberOfDecimals);
+    var roundedValue = Math.round(value * divide) / divide;
+    return roundedValue;
+}
+
 function getMeterPerPixel(lat, zoomLevel){
     return (40075016.686 * Math.abs(Math.cos(toRadians(lat))) / Math.pow(2, zoomLevel + 9));
 }
