@@ -1,5 +1,9 @@
 coil = (function() {
     //Properties
+    var precisionPixels = 1;
+    var precisionDistance = 7;
+    var precisionAngle = 2;
+
     var coil = {
         curveRadius: 5,
         width: 600 - 10,
@@ -9,6 +13,21 @@ coil = (function() {
     function setProperties(width, curveRadius) {
         coil.curveRadius = curveRadius;
         coil.width = width - curveRadius * 2;
+    }
+
+    function setHeight(desiredHeight, streetLength, pixelPerMeter) {
+        var maximumIterations = 20;
+        for (var i = 0; i < maximumIterations; i++) {
+            var coilHeight = getCoilHeight(coil.width, streetLength, pixelPerMeter);
+            var difference = desiredHeight - coilHeight;
+            if (difference < -10) {
+                coil.curveRadius = coil.curveRadius * 0.9;
+            } else if (difference > 10) {
+                coil.curveRadius = coil.curveRadius * 1.1;
+            } else {
+                break;
+            }
+        }
     }
 
     function getPadding() {
@@ -38,20 +57,20 @@ coil = (function() {
         return coordinates;
     }
 
-    function getCoiledStreet(vectorStreetDivided, distanceOffsetInKm) {
+    function getCoiledStreet(vectorStreetDivided, distanceOffsetInKm, bumpDamper, unfoldFactor) {
         var output = JSON.parse(JSON.stringify(vectorStreetDivided));
         delete output.vectors
         delete output.destination
         delete output.objectBearing
         delete output.bounds
 
-        var unfoldedStreet = getUnfoldedStreetSimpleForCoiling(vectorStreetDivided, 1, 5);
+        var unfoldedStreet = getUnfoldedStreetSimpleForCoiling(vectorStreetDivided, 1, unfoldFactor);
         unfold.calculateAndSetObjectBearing(unfoldedStreet);
         var delta = getAngleDifference(90, unfoldedStreet.objectBearing);
 
         unfold.rotateVectorStreet(unfoldedStreet, delta);
         var offsetFromCenterline = getOffsetFromCenterline(unfoldedStreet);
-        var geometry = coilGeometry(offsetFromCenterline, distanceOffsetInKm);
+        var geometry = coilGeometry(offsetFromCenterline, distanceOffsetInKm, bumpDamper);
 
         output.vectors = geometry.vectors;
         output.totalVariation = geometry.totalVariation;
@@ -59,6 +78,20 @@ coil = (function() {
         output.coilEnd = geometry.coilEnd;
         output.coilStart = geometry.coilStart;
         output.coilOrigin = geometry.coilOrigin;
+
+        // Simplify
+        output.length = roundToDecimals(output.length, 3);
+        output.coilStart = roundToDecimals(output.coilStart, 3);
+        output.coilEnd = roundToDecimals(output.coilEnd, 3);
+        output.totalVariation = roundToDecimals(output.totalVariation, 3);
+        output.coilOrigin.x = roundToDecimals(output.coilOrigin.x ,4);
+        output.coilOrigin.y = roundToDecimals(output.coilOrigin.y ,4);
+        output.coilOrigin.angle = roundToDecimals(output.coilOrigin.angle ,4);
+        for (var i = 0; i < output.originalLengths.length; i++) {
+            output.originalLengths[i] = roundToDecimals( output.originalLengths[i], 3);
+        };
+        output.tags.area = roundToDecimals(output.tags.area, 4);
+        output.tags.length = roundToDecimals(output.tags.length, 4);
 
         return output;
     }
@@ -114,25 +147,27 @@ coil = (function() {
     }
 
 
-    function getCoilHeight(coilWidth, streetLength) {
+    function getCoilHeight(coilWidth, streetLength, pixelPerMeterInput) {
+        var pixelPerMeter = pixelPerMeterInput || 1;
         var innerCoilWidth = coilWidth - 2 * coil.curveRadius
         var slopeHeight = 2 * coil.curveRadius;
         var coilCurve = coil.curveRadius * Math.PI
         var numberOfCompleteWidths = Math.floor(streetLength / innerCoilWidth)
 
         var slope = coilCurve + innerCoilWidth;
-        var numberOfCompleteSlopes = Math.floor(streetLength / slope)
+        var numberOfSlopes = streetLength / slope;
+        var numberOfCompleteSlopes = Math.floor(numberOfSlopes);
         var leftoverLength = streetLength - numberOfCompleteSlopes * slope
         if (leftoverLength > innerCoilWidth) {
             leftoverLength -= innerCoilWidth;
         }
-        //console.log(numberOfCompleteSlopes, leftoverLength)
-        var resultingHeight = numberOfCompleteSlopes * slopeHeight;
+        var resultingHeight = Math.ceil(numberOfSlopes) * slopeHeight * pixelPerMeter;
         //console.log('w', coilWidth ,'h', resultingHeight)
         return resultingHeight
     }
 
-    function coilGeometry(offsetFromCenterline, distanceOffset) {
+    function coilGeometry(offsetFromCenterline, distanceOffset, bumpDamper) {
+        bumpDamper = bumpDamper || 150;
         updateProperties();
 
         var output = {
@@ -160,7 +195,7 @@ coil = (function() {
                 bumpHeight = Math.pow(currentOffset.y, 1 / 3);
             }
 
-            bumpHeight = bumpHeight / 500;
+            bumpHeight = bumpHeight / bumpDamper;
 
             // Get position on coil
             //console.log(currentDistance*1000);
@@ -194,8 +229,8 @@ coil = (function() {
                 lengthCounter += newDistance;
 
                 var outputPiece = {
-                    distance: newDistance,
-                    deltaAngle: deltaAngle
+                    distance: roundToDecimals(newDistance, precisionDistance),
+                    deltaAngle: roundToDecimals(deltaAngle, precisionAngle)
                 };
 
                 previousAngle = angle;
@@ -295,22 +330,13 @@ coil = (function() {
         return svgCode;
     }
 
-    function generateSvg(coiledStreets, meterPerPixel) {
-        var svgPieces = [];
-        for (var s = 0; s < coiledStreets.length; s++) {
-            var coiledStreet = coiledStreets[s];
-            var path = generatePath(coiledStreet, meterPerPixel);
-            svgPieces.push(path);
-        }
-
-        svgPieces.push('</svg>');
-        svgPieces.unshift('<svg width="800px" height="3000px"  viewBox="0 0 800 3000" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">>');
-        svgPieces.unshift('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
+    function generateSvg(coiledStreets, meterPerPixel, svgHeight){
+        var svgPieces = generateSvgPieces(coiledStreets, meterPerPixel, svgHeight);
         var svgCode = svgPieces.join('');
         return svgCode;
     }
 
-    function generateSvgPieces(coiledStreets, meterPerPixel) {
+    function generateSvgPieces(coiledStreets, meterPerPixel, svgHeight) {
         var svgPieces = [];
         for (var s = 0; s < coiledStreets.length; s++) {
             var coiledStreet = coiledStreets[s];
@@ -319,12 +345,14 @@ coil = (function() {
         }
 
         svgPieces.push('</svg>');
-        svgPieces.unshift('<svg width="800px" height="3000px"  viewBox="0 0 800 3000" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">>');
+        svgPieces.unshift('<svg width="800px" height="' + (svgHeight + 100) + 'px"  viewBox="0 0 800 ' + (svgHeight + 100) + '" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">>');
         svgPieces.unshift('<?xml version="1.0" encoding="UTF-8" standalone="no"?>');
         return svgPieces;
     }
 
-    function generatePath(coiledStreet, meterPerPixel) {
+    function generatePath(coiledStreet, meterPerPixel, stroke, strokeWidth) {
+        stroke = stroke || '#000000' // '#50E3C2';
+        strokeWidth = strokeWidth || 10;
         var scale = meterPerPixel / 1000;
         var cursor = {
             x: coil.padding[1] / 2 + coiledStreet.coilOrigin.x / scale,
@@ -335,10 +363,11 @@ coil = (function() {
 
         var angleCounter = 0;
         var pathPieces = [];
+        var lastUsedY;
         //var name = coiledStreet.tags.name.name || coiledStreet.tags.name || "unnamed";
         //name = name.replace(" ", "_");
         name = coiledStreet['_id']
-        pathPieces.push('<path id="' + name + '" stroke="#50E3C2" stroke-width="5" fill="none" d="');
+        pathPieces.push('<path id="' + name + '" stroke="' + stroke + '" stroke-width="' + strokeWidth + '" fill="none" d="');
         for (var j = 0; j < coiledGeometry.length; j++) {
             var vector = coiledGeometry[j];
             angleCounter += vector.deltaAngle;
@@ -349,10 +378,14 @@ coil = (function() {
             cursor.x += dx;
             cursor.y -= dy;
 
+            var currentY = roundToHalf(cursor.y);
+
             if (j == 0) {
-                pathPieces.push('M' + cursor.x + ',' + cursor.y + ' ');
-            } else {
-                pathPieces.push('L' + cursor.x + ',' + cursor.y + ' ');
+                pathPieces.push('M' + roundToHalf(cursor.x, precisionPixels) + ',' + currentY + ' ');
+                lastUsedY = currentY;
+            } else if (lastUsedY !== currentY || j == coiledGeometry.length - 1) { // Only add a new point if there is change -> saves storage
+                pathPieces.push('L' + roundToHalf(cursor.x, precisionPixels) + ',' + currentY + ' ');
+                lastUsedY = currentY;
             }
         }
 
@@ -470,6 +503,26 @@ coil = (function() {
         return d;
     }
 
+    // Helper script to round values
+    function roundToDecimals(value, numberOfDecimals) {
+        var divide = Math.pow(10, numberOfDecimals);
+        var roundedValue = Math.round(value * divide) / divide;
+        return roundedValue;
+    }
+
+    function roundToHalf(value) {
+        var converted = parseFloat(value); // Make sure we have a number 
+        var decimal = (converted - parseInt(converted, 10));
+        decimal = Math.round(decimal * 10);
+        if (decimal == 5) {
+            return (parseInt(converted, 10) + 0.5); }
+        if ((decimal < 3) || (decimal > 7)) {
+            return Math.round(converted);
+        } else {
+            return (parseInt(converted, 10) + 0.5);
+        }
+    }
+
     function getAngle(p1, p2) {
         var angleDeg = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI + 90;
         while (angleDeg < -180) {
@@ -488,6 +541,7 @@ coil = (function() {
         getPositionOnCoil: getPositionOnCoil,
         getCoiledStreet: getCoiledStreet,
         setProperties: setProperties,
+        setHeight: setHeight,
         coilGeometry: coilGeometry,
         generateSvg: generateSvg,
         getPadding: getPadding,
