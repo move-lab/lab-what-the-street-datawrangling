@@ -1,407 +1,370 @@
 var fs = require('fs');
 var argv = require('minimist')(process.argv.slice(2));
+var path = require('path');
 var async = require('async');
 var mongodb = require('mongodb');
-var parseOsmUnits = require('../lib/parse-osm-units/parse-osm-units.js');
+var parseOsmUnits = require(path.join('..', 'lib', 'parse-osm-units'));
 
 var MongoClient = mongodb.MongoClient;
-var defaultCollectionName = "ways";
-var collectionName;
 
-var areaCounter = { total: 0 };
-var lengthCounter = { total: 0 };
+var query;
+var queryDefault = "{}";
 
-//Source http://wiki.openstreetmap.org/wiki/Key:lanes#Assumptions
-var assumedLaneCountTwoWay = {
-    'residential': 2,
-    'tertiary': 2,
-    'secondary': 2,
-    'primary': 2,
-    'service': 1,
-    'track': 1,
-    'path': 1
+var limitQuery;
+var limitQueryDefault = false;
+
+var areaCounter = {
+    "car": {},
+    "bike": {},
+    "rail": {}
 };
-
-var occurences = {};
+var lengthCounter = {
+    "car": {},
+    "bike": {},
+    "rail": {}
+};
 
 main();
 
 function main() {
     printInstructions();
+    getParameters();
     if (argv.mongodb) {
-        collectionName = argv.collection || defaultCollectionName;
-
-        printActiveSettings();
         printProgressStart();
+
+        countWidthOccurences(argv.mongodb)
+            .then(addFallbacksToMissingOccurences)
+            .then(processOccurences)
+            .then(calculateAreaAndUpdateEntry)
+            .then(printSummary);
+    }
+}
+
+function getParameters() {
+    limitQuery = argv.limit || limitQueryDefault;
+    query = JSON.parse(argv.query || queryDefault);
+}
+
+function countWidthOccurences(mongoUrl) {
+    return new Promise(function(resolve, reject) {
+        var occurences = {
+            "car": {},
+            "bike": {},
+            "rail": {}
+        }
+
         console.log();
-        console.log('   1. Analyze Existing Widths');
-        analyzeWitdhs(argv.mongodb);
-    }
-}
-
-function updateOccurences() {
-    for (type in occurences) {
-        var subOccurences = occurences[type];
-        for (subType in subOccurences) {
-            if (subOccurences[subType].counting) {
-                subOccurences[subType].widthPerLane = subOccurences[subType].counting.widthPerLane / subOccurences[subType].counting.lengthInMeter;
+        console.log('   1. Getting average area per length and lane for streets');
+        stdout('      Connecting to mongodb ' + mongoUrl);
+        MongoClient.connect(mongoUrl, function(err, db) {
+            if (err) {
+                reject(Error(err));
             }
-        }
-    }
-}
-
-
-function analyzeWitdhs(mongoUrl) {
-    var counter = 0;
-    stdout('      Connecting to mongodb ' + mongoUrl);
-    MongoClient.connect(mongoUrl, function(err, db) {
-        if (err) {
-            console.log('Unable to connect to the mongoDB server. Error:', err);
-        } else {
             stdout('      Connection successful');
-            var collection = db.collection(collectionName);
-            var cursor = collection.find({});
+            var collection = db.collection('ways');
+            var cursor = collection.find(query, {}, { limit: limitQuery });
 
-            cursor.once('end', function() {
-                db.close();
-                stdout('      Done (' + counter + ' ways)');
-
-                updateOccurences();
-                console.log();
-                console.log();
-                console.log('   2. Calculating Area');
-                console.log();
-                console.log();
-                console.log(JSON.stringify(occurences));
-                console.log();
-                console.log();
-                calculateAndUpdateWidthInformation(mongoUrl);
-            });
-
-            cursor.on('data', function(doc) {
-                stdout('      Processing Way #' + counter);
-                var wayType;
-                if (doc.properties.highway) {
-                    wayType = 'highway';
-                    stdoutappend(' | type: highway');
-                } else if (doc.properties.railway) {
-                    wayType = 'railway';
-                    stdoutappend(' | type: railway');
-                } else {
-                    wayType = 'irrelevant';
-                    stdoutappend(' | irrelevant type - ignoring');
+            cursor.on('data', function(way) {
+                stdout('      Way ' + way._id);
+                // Are we using the right DB?
+                if (!way.properties) {
+                    printErrorProperties();
+                    reject();
                 }
-                getInformationFor(wayType, doc);
-                counter++;
+
+                // Analyze way
+
+                var relevantWayTypes = getRelevantWayTypes(way);
+                for (mobilityKind in relevantWayTypes) {
+                    var relevantWayType = relevantWayTypes[mobilityKind];
+                    var w = getWidth(way);
+
+                    // For streets with width
+                    if (mobilityKind === 'car' && w) {
+                        var numberOfLanes = getNumberOfLanes(way)
+                        var l = getLength(way);
+                        var a = w * l;
+
+                        // Add entry to object
+                        if (!occurences.car[relevantWayType]) {
+                            occurences.car[relevantWayType] = {
+                                "length": 0,
+                                "area": 0
+                            }
+                        }
+                        occurences.car[relevantWayType].length += l;
+                        occurences.car[relevantWayType].area += a / numberOfLanes;
+                    }
+
+                    // For bikelanes with width
+                    if (mobilityKind === 'bike' && w) {
+                        var l = getLength(way);
+                        var a = w * l;
+
+                        if (relevantWayType === 'designated' || relevantWayType === 'cycleway') {
+                            // track does not work here, because it is only part of the road
+                            var numberOfLanes = 1; // A bike way normally has only 1 lane
+
+                            if (!occurences.bike[relevantWayType]) {
+                                occurences.bike[relevantWayType] = {
+                                    "length": 0,
+                                    "area": 0
+                                }
+                            }
+
+                            occurences.bike[relevantWayType].length += l;
+                            occurences.bike[relevantWayType].area += a / numberOfLanes;
+                        }
+                    }
+
+                    if (mobilityKind === 'rail' && w) {
+                        // Didn't return any result for Berlin, so we are not using it
+                    }
+                }
             });
-        }
+
+            cursor.on('end', function() {
+                stdout('      Done');
+                console.log();
+                db.close();
+                resolve(occurences);
+            });
+        });
     });
 }
 
-function calculateAndUpdateWidthInformation(mongoUrl) {
-    var counter = 0;
-    stdout('      Connecting to mongodb ' + mongoUrl);
-    MongoClient.connect(mongoUrl, function(err, db) {
-        if (err) {
-            console.log('Unable to connect to the mongoDB server. Error:', err);
-        } else {
+function calculateAreaAndUpdateEntry(perMeterAndLane) {
+    return new Promise(function(resolve, reject) {
+        console.log();
+        console.log('   4. Calculating area and updating MongoDB');
+        stdout('      Connecting to mongodb ' + argv.mongodb);
+        MongoClient.connect(argv.mongodb, function(err, db) {
+            if (err) {
+                reject(Error(err));
+            }
+
             stdout('      Connection successful');
-            var collection = db.collection(collectionName);
-            var cursor = collection.find({});
+            var collection = db.collection('ways');
+            var cursor = collection.find(query, {}, { limit: limitQuery });
 
-            cursor.once('end', function() {
-                db.close();
-                stdout('      Done (' + counter + ' ways)');
-                printSummary();
-            });
+            cursor.on('data', function(way) {
+                stdout('      Way ' + way._id);
+                cursor.pause();
+                var relevantWayTypes = getRelevantWayTypes(way);
+                var output = {};
+                for (mobilityKind in relevantWayTypes) {
+                    var relevantWayType = relevantWayTypes[mobilityKind];
+                    var w = getWidth(way);
+                    var l = getLength(way);
 
-            cursor.on('data', function(doc) {
-                stdout('      Updating Way #' + counter);
-                var wayType;
-                if (doc.properties.highway) {
-                    wayType = 'highway';
-                    stdoutappend(' | type: highway');
-                } else if (doc.properties.railway) {
-                    wayType = 'railway';
-                    stdoutappend(' | type: railway');
-                } else {
-                    wayType = 'irrelevant';
-                    stdoutappend(' | irrelevant type - ignoring');
+                    if (mobilityKind === 'car' || mobilityKind === 'bike') {
+                        var a;
+                        if (w) {
+                            a = l * w;
+                        } else {
+                            var numberOfLanes = getNumberOfLanes(way);
+                            var wAverage = perMeterAndLane[mobilityKind][relevantWayType];
+                            a = l * wAverage * numberOfLanes;
+                        }
+                        a = Number(a.toFixed(3));
+                        output[mobilityKind] = a;
+                    } else if (mobilityKind === 'rail') {
+                        var numberOfTracks = getNumberOfTracks(way);
+                        var wAverage = perMeterAndLane[mobilityKind][relevantWayType];
+                        var a = l * wAverage * numberOfTracks;
+                        a = Number(a.toFixed(3));
+                        output[mobilityKind] = a;
+                    }
+
+                    // Count areas
+                    if (!areaCounter[mobilityKind][relevantWayType]) {
+                        areaCounter[mobilityKind][relevantWayType] = 0;
+                    }
+                    areaCounter[mobilityKind][relevantWayType] += a;
+
+                    // Count Length
+
+                    if (!lengthCounter[mobilityKind][relevantWayType]) {
+                        lengthCounter[mobilityKind][relevantWayType] = 0;
+                    }
+                    lengthCounter[mobilityKind][relevantWayType] += l;
                 }
-                updateInformationFor(wayType, doc, collection);
-                counter++;
+
+                // Update entry
+                way.properties_derived.area = output;
+                collection.update({ _id: way._id }, way, function() {
+                    cursor.resume();
+                });
+
             });
-        }
+            cursor.on('end', function(way) {
+                stdout('      Done');
+                console.log();
+                db.close();
+                resolve();
+            });
+        });
     });
 }
 
-function updateInformationFor(wayType, doc, collection) {
-    switch (wayType) {
-        case 'highway':
-            var laneInformation = getLaneInformation(doc);
-            if (laneInformation.highwayType) {
-                var area;
-                var width;
-                var forComparison = getHighwayTypeForComparison(doc.properties.highway.highway);;
-                if (doc.properties.width && doc.properties.width.width) {
-                    width = getCleanValueAsMeter(doc.properties.width.width);
-                } else {
-                    if (occurences[wayType][forComparison]) {
-                        width = laneInformation.numberOfLanes * occurences[wayType][forComparison].widthPerLane;
-                    } else if (forComparison == 'trunk' && !occurences[wayType][forComparison]) {
-                        // If trunk and not existing, use the information for motorway instead;
-                        width = laneInformation.numberOfLanes * occurences[wayType]['motorway'].widthPerLane;
-                    } else if (forComparison === 'd' || forComparison === 'corridor' || forComparison === 'platform' || forComparison === 'access_ramp' || forComparison === 'layby' ||  forComparison === 'elevator' || forComparison === 'abandoned' ||  forComparison === 'none' ||  forComparison === 'bus_stop' ||  forComparison === 'services' || forComparison === 'traffic_island') {
-                        // see 
-                        // d:  http://www.openstreetmap.org/way/26819749
-                        // corridor:  http://www.openstreetmap.org/way/41699327
-                        // platform:  http://www.openstreetmap.org/way/48044088
-                        // access_ramp:  http://www.openstreetmap.org/way/165729720
-                        // layby:  http://www.openstreetmap.org/way/171879602
-                        // elevator:  http://www.openstreetmap.org/way/176494836
-                        // abandoned:  http://www.openstreetmap.org/way/199360470
-                        // none:  http://www.openstreetmap.org/way/225539438
-                        // bus_stop:  http://www.openstreetmap.org/way/319692394
-                        // traffic_island:  http://openstreetmap.org/way/342881078
-                        width = 0;
-                    } else {
-                        console.log();
-                        console.log('-------------------');
-                        console.log(doc, occurences);
-                        console.log('-------------------');
-                        width = 0;
-                    }
-                }
-
-                if (doc.properties_derived) {
-                    if (doc.properties_derived.length) {
-                        area = width * doc.properties_derived.length;
-
-                        // Update Doc
-                        doc.properties_derived.width = width;
-                        doc.properties_derived.area = area;
-                        collection.update({ _id: doc["_id"] }, doc);
-
-                        // Count Area
-                        if (isNaN(area)) {
-                            console.log();
-                            console.log();
-                            console.log(area, doc);
-                        }
-
-                        areaCounter.total += area;
-
-                        if (!areaCounter[forComparison]) {
-                            areaCounter[forComparison] = 0;
-                        }
-                        areaCounter[forComparison] += area;
-
-                        // Count Length
-                        lengthCounter.total += doc.properties_derived.length;
-                        if (!lengthCounter[forComparison]) {
-                            lengthCounter[forComparison] = 0;
-                        }
-                        lengthCounter[forComparison] += doc.properties_derived.length;
-                    }
-                }
-            }
-            break;
-
-        case 'railway':
-            var railInformation = getRailInformation(doc);
-            if (railInformation && railInformation.trackType) {
-                var area;
-                var width;
-                var forComparison = railInformation.trackType;
-                if (doc.properties.width && doc.properties.width.width) {
-                    width = getCleanValueAsMeter(doc.properties.width.width);
-                } else {
-                    if (occurences[wayType][forComparison]) {
-                        width = railInformation.numberOfTracks * occurences[wayType][forComparison].widthPerLane;
-                    // } else {
-                    //     width = 0;
-                    } else {
-                        console.log();
-                        console.log('-------------------');
-                        console.log(JSON.stringify(doc), JSON.stringify(occurences));
-                        console.log('-------------------');
-                        width = 0;
-                    }
-                }
-
-                if (doc.properties_derived) {
-                    if (doc.properties_derived.length) {
-                        area = width * doc.properties_derived.length;
-
-                        // Update Doc
-                        doc.properties_derived.width = width;
-                        doc.properties_derived.area = area;
-                        collection.update({ _id: doc["_id"] }, doc);
-
-                        // Count Area
-                        if (isNaN(area)) {
-                            console.log();
-                            console.log();
-                            console.log(area, doc);
-                        }
-
-                        areaCounter.total += area;
-
-                        if (!areaCounter[forComparison]) {
-                            areaCounter[forComparison] = 0;
-                        }
-                        areaCounter[forComparison] += area;
-
-                        // Count Length
-                        lengthCounter.total += doc.properties_derived.length;
-                        if (!lengthCounter[forComparison]) {
-                            lengthCounter[forComparison] = 0;
-                        }
-                        lengthCounter[forComparison] += doc.properties_derived.length;
-                    }
-                }
-            }
-            break;
-
-        case 'irrelevant':
-            break;
-    }
-}
-
-function getInformationFor(wayType, doc) {
-    switch (wayType) {
-        case 'highway':
-            var laneInformation = getLaneInformation(doc);
-
-            if (laneInformation.highwayType) {
-                stdoutappend(' | highway ' + laneInformation.highwayType + ' with ' + laneInformation.numberOfLanes + ' lane(s)');
-                calculateStreetWidth(doc, laneInformation);
-            }
-            break;
-
-        case 'railway':
-            var railInformation = getRailInformation(doc);
-            if (railInformation !== null) {
-                calculateRailWidth(doc, railInformation);
-            }
-            break;
-
-        case 'irrelevant':
-            stdout('      Irrelevant way type - ignoring');
-            break;
-    }
-}
-
-function calculateRailWidth(doc, railInformation) {
-    var consoleOutput = "";
-
-    if (doc.properties_derived) {
-        if (doc.properties.width) {
-            if (doc.properties.width.width) {
-                var railWidth = getCleanValueAsMeter(doc.properties.width.width);
-                if (railWidth !== null) {
-                    countWidthOccurences('railway', railWidth, doc.properties_derived.length, railInformation, railInformation.trackType, railInformation.numberOfTracks);
-                }
-            }
-        }
-    }
-}
-
-function getCleanNumberOfRailTracks(tracks, doc) {
-    if (isNaN(tracks)) {
-        if (tracks.includes(';')) {
-            var split = tracks.split(';');
-            var value = 0;
-            for (var i = 0; i < split.length; i++) {
-                value += Number(split[i]);
-            }
-
-            if (isNaN(value)) {
-                throw JSON.stringify(doc);
-            } else {
-                return value;
-            }
-        }
+function getNumberOfTracks(way) {
+    if (way.properties && way.properties.tracks && way.properties.tracks.tracks) {
+        return way.properties.tracks.tracks;
     } else {
-        return tracks;
+        return 1;
     }
 }
 
-function add(a, b) {
-    return a + b;
-}
-
-function getRailInformation(doc) {
-    var numberOfTracks = 1;
-    var trackType;
-    if (doc.properties.tracks && doc.properties.tracks.tracks) {
-        numberOfTracks = getCleanNumberOfRailTracks(doc.properties.tracks.tracks, doc);
+function getWidth(way) {
+    var width = null;
+    if (way.properties && way.properties.width && way.properties.width.width) {
+        width = way.properties.width.width;
+        width = parseOsmUnits.convertToDefaultUnits(width, 'distance');
     }
 
-    if (doc.properties.railway && doc.properties.railway.railway) {
-        trackType = doc.properties.railway.railway;
-    } else {
-        if (doc.properties.disused && doc.properties.disused.disused && doc.properties.disused.disused === 'yes') {
-            return null;
-        } else {
-            throw JSON.stringify(doc);
+    return width;
+}
+
+function getLength(way) {
+    var length = null;
+    if (way.properties_derived && way.properties_derived.length) {
+        length = way.properties_derived.length;
+    }
+    return length;
+}
+
+function getRelevantWayTypes(way) {
+    var relevantWayTypes = {};
+
+    // Types we are using (according to Michael's Jupyter Notebooks)
+    // Bike
+    //      bicycle: designated
+    //      highway: cycleway
+    //      cycleway: track
+    //
+    // Rail
+    //      railway: tram
+    //      railway: light_rail
+    //      railway: rail
+    //      railway: subway
+    //      railway: narrow_gauge
+    //      railway: funicular
+    //      railway: monorail
+    //
+    // Car
+    //      highway: service
+    //      highway: residential
+    //      highway: primary
+    //      highway: secondary
+    //      highway: tertiary
+    //      highway: unclassified
+
+    // Search in Highway Tag
+    if (way.properties.highway && way.properties.highway.highway) {
+        var hw = way.properties.highway.highway;
+        var hwTypes = ['service', 'residential', 'primary', 'secondary', 'tertiary', 'unclassified'];
+        var bcTypes = ['cycleway'];
+
+        // Car Highway
+        if (inArray(hw, hwTypes)) {
+            relevantWayTypes.car = hw;
+        }
+
+        // Bike Highway
+        if (inArray(hw, bcTypes)) {
+            relevantWayTypes.bike = hw;
         }
     }
 
-    output = {};
-    output.trackType = trackType;
-    output.numberOfTracks = numberOfTracks;
-    return output;
+    // Search in Railway Tag
+    if (way.properties.railway && way.properties.railway.railway) {
+        var rw = way.properties.railway.railway;
+        var rwTypes = ['tram', 'light_rail', 'rail', 'subway', 'narrow_gauge', 'funicular', 'monorail'];
+        if (inArray(rw, rwTypes)) {
+            relevantWayTypes.rail = rw;
+        }
+    }
+
+    // Search in Cycleway Tag
+    if (way.properties.cycleway && way.properties.cycleway.cycleway) {
+        var cw = way.properties.cycleway.cycleway;
+        var cwTypes = ['track'];
+        if (inArray(cw, cwTypes)) {
+            relevantWayTypes.bike = cw;
+        }
+    }
+
+    // Search in Bicycle Tag
+    if (way.properties.bicycle && way.properties.bicycle.bicycle) {
+        var bc = way.properties.bicycle.bicycle;
+        var bcTypes = ['designated'];
+        if (inArray(bc, bcTypes)) {
+            relevantWayTypes.bike = bc;
+        }
+    }
+
+    if (Object.keys(relevantWayTypes).length > 0) {
+        return relevantWayTypes;
+    } else {
+        return null;
+    }
 }
 
-function getLaneInformation(doc) {
-    var highwayType = null;
-    var computedNumberOfLanes = null;
-    var lanes = null;
-    var forward = null;
-    var backward = null;
-    var oneway = false;
-    var output = {};
 
-    if (doc.properties.highway) {
-        highwayType = doc.properties.highway.highway;
-        computedNumberOfLanes = assumedLaneCountTwoWay[highwayType] || 2;
+function getNumberOfLanes(way) {
+    //Source http://wiki.openstreetmap.org/wiki/Key:lanes#Assumptions
+    var assumedLaneCountTwoWay = {
+        'residential': 2,
+        'tertiary': 2,
+        'secondary': 2,
+        'primary': 2,
+        'service': 1,
+        'track': 1,
+        'path': 1
+    };
 
-        if (doc.properties.lanes) {
+    if (way.properties.highway && way.properties.highway.highway) {
+        var highwayType = way.properties.highway.highway;
+        var computedNumberOfLanes = assumedLaneCountTwoWay[highwayType] || 2;
+        var lanes = null;
+        var forward = null;
+        var backward = null;
+        var oneway = false;
 
+        if (way.properties.lanes) {
             // Get number of lanes (in both ways)
-            if (doc.properties.lanes.lanes) {
-                if (isNaN(doc.properties.lanes.lanes)) {
+            if (way.properties.lanes.lanes) {
+                if (isNaN(way.properties.lanes.lanes)) {
                     // This should never happen
-                    console.log("Lane information is NaN", doc);
+                    console.log("Lane information is NaN", way);
                     process.exit();
                 } else {
                     // Read number of lanes
-                    lanes = Number(doc.properties.lanes.lanes);
+                    lanes = Number(way.properties.lanes.lanes);
                 }
             }
 
             // Get number of lanes forward
-            if (doc.properties.lanes.forward) {
-                if (isNaN(doc.properties.lanes.forward)) {
+            if (way.properties.lanes.forward) {
+                if (isNaN(way.properties.lanes.forward)) {
                     // This should never happen
-                    console.log("Lane information is NaN", doc);
+                    console.log("Lane information is NaN", way);
                     process.exit();
                 } else {
                     // Read number of lanes forward
-                    forward = Number(doc.properties.lanes.forward);
+                    forward = Number(way.properties.lanes.forward);
                 }
             }
 
             // Get number of lanes backward
-            if (doc.properties.lanes.backward) {
-                if (isNaN(doc.properties.lanes.backward)) {
+            if (way.properties.lanes.backward) {
+                if (isNaN(way.properties.lanes.backward)) {
                     // This should never happen
-                    console.log("Lane information is NaN", doc);
+                    console.log("Lane information is NaN", way);
                     process.exit();
                 } else {
                     // Read number of lanes backward
-                    backward = Number(doc.properties.lanes.backward);
+                    backward = Number(way.properties.lanes.backward);
                 }
             }
 
@@ -417,20 +380,18 @@ function getLaneInformation(doc) {
             }
 
             // Get direction information
-            if (doc.properties.oneway) {
-                if (doc.properties.oneway.oneway) { // Because there are other cases, like only bicycle one way
-                    if (doc.properties.oneway.oneway == 'yes') {
-                        oneway = true;
-                    } else if (doc.properties.oneway.oneway == 'no') {
-                        oneway = false;
-                    } else if (doc.properties.oneway.oneway == -1) {
-                        // See http://wiki.openstreetmap.org/wiki/Key:oneway#Normal_use
-                        oneway = true;
-                    } else {
-                        // This should never happen
-                        console.log(doc);
-                        process.exit();
-                    }
+            if (way.properties.oneway && way.properties.oneway.oneway) { // Because there are other cases, like only bicycle one way
+                if (way.properties.oneway.oneway == 'yes') {
+                    oneway = true;
+                } else if (way.properties.oneway.oneway == 'no') {
+                    oneway = false;
+                } else if (way.properties.oneway.oneway == -1) {
+                    // See http://wiki.openstreetmap.org/wiki/Key:oneway#Normal_use
+                    oneway = true;
+                } else {
+                    // This should never happen
+                    console.log(way);
+                    process.exit();
                 }
             } else if (forward && backward) { //redundant
                 oneway = false;
@@ -440,126 +401,124 @@ function getLaneInformation(doc) {
                 oneway = true;
             }
         }
-    }
 
-    output.highwayType = highwayType;
-    output.numberOfLanes = computedNumberOfLanes;
-    output.forward = forward;
-    output.backward = backward;
-    output.oneway = oneway;
-    return output;
+        return computedNumberOfLanes;
+    } else {
+        return 1; // Only bikelanes afa I can tell
+    }
 }
 
 
-function calculateStreetWidth(doc, laneInformation) {
-    var consoleOutput = "";
 
-    if (doc.properties_derived) {
-        var streetLength = doc.properties_derived.length;
-        var highwayTypeForComparison = getHighwayTypeForComparison(laneInformation.highwayType);
+// Helpers
+function inArray(value, arr) {
+    if (arr.indexOf(value) > -1) {
+        return true;
+    } else {
+        return false;
+    }
+}
 
-        if (doc.properties.width) {
-            if (doc.properties.width.width) {
-                var streetWidth = getCleanValueAsMeter(doc.properties.width.width);
-                if (streetWidth !== null) {
-                    countWidthOccurences('highway', streetWidth, doc.properties_derived.length, laneInformation, laneInformation.highwayType, laneInformation.numberOfLanes);
+function addFallbacksToMissingOccurences(occurences) {
+    console.log();
+    console.log('   2. Using fallbacks for missing values in dataset');
+
+    // Fallbacks for:
+    // cars are taken from Berlin
+    // bikes
+    //     track: measured
+    //     designated & cycleway (taken from Berlin)
+    // rails were
+    //     tram equals tertiary street size (because they run on that)
+    //     light_rail measured in Berlin
+    //     rail measured in Berlin
+    //     subway measured in Berlin
+    //     narrow_gauge measured in Berlin
+    //     funicular measured in Stuttgart
+    //     monorail measured in Chester
+
+    // (Measurings with https://www.daftlogic.com/projects-google-maps-area-calculator-tool.htm)
+    var fallbacks = {
+        "car": {
+            "service": { "length": 27896.39344782315, "area": 110925.94555072353 },
+            "residential": { "length": 113030.81578047737, "area": 409121.5575299361 },
+            "primary": { "length": 3015.9909653510217, "area": 10030.219833854235 },
+            "secondary": { "length": 4759.6243327021575, "area": 23789.849002010542 },
+            "tertiary": { "length": 19617.144074377127, "area": 79183.1527282509 },
+            "unclassified": { "length": 13105.630666617299, "area": 42324.08874589544 }
+        },
+        "bike": {
+            "track": { "length": 106.10, "area": 170.41 },
+            "designated": { "length": 107988.96752183285, "area": 299112.226661055 },
+            "cycleway": { "length": 3419.8019526581766, "area": 8579.888947141335 }
+        },
+        "rail": {
+            "light_rail": { "length": 116.91, "area": 535.94 },
+            "rail": { "length": 89.19, "area": 463.82 },
+            "subway": { "length": 106.46, "area": 463.135 },
+            "narrow_gauge": { "length": 18.37, "area": 47.59 },
+            "funicular": { "length": 49.72, "area": 174.52 },
+            "monorail": { "length": 86.23, "area": 139.08 },
+            "tram": "will be replaced"
+        }
+    }
+
+    // Fallback for 
+    for (mobilityKind in fallbacks) {
+        var fallback = fallbacks[mobilityKind];
+        console.log('      ' + mobilityKind + ':');
+        for (wayType in fallback) {
+            if (occurences[mobilityKind][wayType]) {
+                console.log('         - ' + wayType + ': Value exists');
+            } else {
+                console.log('         - ' + wayType + ': Fallback');
+                if (mobilityKind === 'rail' && wayType === 'tram') { // Because they run on this way type
+                    occurences['rail']['tram'] = occurences['car']['tertiary'] || fallbacks['car']['tertiary'];
+                } else {
+                    occurences[mobilityKind][wayType] = fallbacks[mobilityKind][wayType];
                 }
             }
         }
+        console.log();
     }
+    return occurences;
 }
 
-function getHighwayTypeForComparison(type) {
-    type = type.replace('_link', '');
-    if (type == 'road') {
-        // 'road' is only a temporary tag, use unclassified as a fallback instead
-        // More information http://wiki.openstreetmap.org/wiki/Tag:highway%3Droad
-        return 'unclassified';
+function processOccurences(occurences) {
+    console.log('   3. Get average area per meter and lane for ');
+    var perMeterAndLane = {
+        "car": {},
+        "bike": {},
+        "rail": {}
     }
-    return type;
-}
 
-function countWidthOccurences(type, streetWidth, streetLength, laneInformation, wayType, numberOfLanes) {
-    if (!occurences[type]) {
-        occurences[type] = {};
-    }
-    if (!occurences[type][wayType]) {
-        occurences[type][wayType] = {
-            occurences: 0,
-            counting: {
-                lengthInMeter: 0,
-                widthPerLane: 0
-            }
+    for (mobilityKind in occurences) {
+        var occurence = occurences[mobilityKind];
+        console.log('      ' + mobilityKind + ':');
+        for (wayType in occurence) {
+            var entry = occurence[wayType];
+            var length = entry.length;
+            var area = entry.area;
+            var areaPerMeter = area / length;
+            perMeterAndLane[mobilityKind][wayType] = areaPerMeter;
+            console.log('         - ' + wayType + ': ' + areaPerMeter.toFixed(3) + ' m2');
         }
+        console.log();
     }
-    var highway = occurences[type][wayType];
 
-    highway.occurences += 1;
-    highway.counting.lengthInMeter += streetLength;
-    highway.counting.widthPerLane += streetWidth / numberOfLanes * streetLength;
-
-    if (isNaN(highway.counting.lengthInMeter) ||  isNaN(highway.counting.widthPerLane)) {
-        console.log(type, streetWidth, streetLength, laneInformation);
-        process.exit();
-    }
+    return perMeterAndLane;
 }
 
-function getCleanValueAsMeter(input){
-    return parseOsmUnits.convertToDefaultUnits(input, 'distance');
-}
 
-// function getCleanValueAsMeter(string) {
-//     // Because units can be used in strings 
-//     // See http://wiki.openstreetmap.org/wiki/Key:width
-
-//     if (string === 'narrow') {
-//         // Legacy tagging http://wiki.openstreetmap.org/wiki/Proposed_features/Narrow_width
-//         return null
-//     }
-
-//     if (string.includes(';')) {
-//         // Appears to be mistagged http://wiki.openstreetmap.org/wiki/Semi-colon_value_separator
-//         return null
-//     }
-
-//     if (string.includes(',')) {
-//         // Malformatted http://wiki.openstreetmap.org/wiki/Key:width#Incorrect_values
-//         string = string.replace(',', '.');
-//     }
-
-//     if (string.includes(' km') || string.includes('km')) {
-//         string = (string.replace(' km', '')).replace('km', '');
-//         string = Number(string) * 1000;
-//     } else if (string.includes(' m') || string.includes('m')) {
-//         string = (string.replace(' m', '')).replace('m', '');
-//     } else if (string.includes(' mi') || string.includes('mi')) {
-//         string = (string.replace(' mi', '')).replace('mi', '');
-//         string = Number(string) * 1609.34;
-//     }
-
-//     var output = string;
-
-//     if (isNaN(output)) {
-//         // This should never happen
-//         console.log();
-//         console.log(string);
-//         console.log();
-//         process.exit();
-//     };
-//     return Number(output);
-// }
-
-function printInstructions() {
-    console.log('');
-    console.log('--------------');
-    console.log('  HOW TO RUN  ');
-    console.log('--------------');
-    console.log('');
-    console.log('   Example:');
-    console.log('   node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin --collection ways');
-    console.log('');
-    console.log('   --mongodb: The connection to the mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin');
-    console.log('   --collection: [optional] The name of the collection you want to connect to - defaults to ' + defaultCollectionName);
+// Output
+function printErrorProperties() {
+    console.log();
+    console.log();
+    console.log('   Error: Properties could not be found');
+    console.log('      - Are you sure your are using the right db?');
+    console.log('      - db should end with _derived');
+    console.log();
+    console.log('   Exiting now');
     console.log();
 }
 
@@ -573,13 +532,17 @@ function stdoutappend(str) {
     process.stdout.write(str);
 }
 
-function printActiveSettings() {
+function printInstructions() {
+    console.log('');
     console.log('--------------');
-    console.log('   SETTINGS      ');
+    console.log('  HOW TO RUN  ');
     console.log('--------------');
+    console.log('');
+    console.log('   Example:');
+    console.log('   node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin');
+    console.log('');
+    console.log('   --mongodb: The connection to the mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin');
     console.log();
-    console.log('   - mongodb: ' + argv.mongodb);
-    console.log('   - collection: ' + collectionName);
 }
 
 function printProgressStart() {
@@ -596,17 +559,74 @@ function printSummary() {
     console.log('   COMPLETE      ');
     console.log('--------------');
     console.log();
-    console.log('   - All area:   ' + areaCounter.total + 'm2');
-    console.log('   - Entire length:   ' + lengthCounter.total + 'm');
 
-    var entireStreetArea = (areaCounter.residential || 0) + (areaCounter.primary || 0) + (areaCounter.secondary || 0) + (areaCounter.motorway || 0) + (areaCounter.living_street || 0) + (areaCounter.tertiary || 0) + (areaCounter.service || 0) + (areaCounter.unclassified || 0) + (areaCounter.trunk || 0);
-    var entireStreetLength = (lengthCounter.residential || 0) + (lengthCounter.primary || 0) + (lengthCounter.secondary || 0) + (lengthCounter.motorway || 0) + (lengthCounter.living_street || 0) + (lengthCounter.tertiary || 0) + (lengthCounter.service || 0) + (lengthCounter.unclassified || 0) + (lengthCounter.trunk || 0);
+    var forJson = {
+        "area": {},
+        "length": {}
+    }
 
-    console.log('   - All streets: ' + entireStreetArea + 'm2');
-    console.log('   - All streets: ' + entireStreetLength + 'm');
+
     console.log();
-    console.log('   Lengths\n', lengthCounter);
+    console.log('   - Area Breakdown');
+    var totalCounter = 0;
+    for (mobilityKind in areaCounter) {
+        var counter = 0;
+        var fallback = areaCounter[mobilityKind];
+        console.log('      ' + mobilityKind + ':');
+
+        forJson.area[mobilityKind] = {};
+
+        for (wayType in fallback) {
+            fallback[wayType] = Number(fallback[wayType].toFixed(2));
+            counter += fallback[wayType];
+            console.log('         - ' + wayType + ' = ' + fallback[wayType] + ' m2');
+            forJson.area[mobilityKind][wayType] = fallback[wayType];
+        }
+        console.log('           ----------------------');
+        counter = Number(counter.toFixed(2));
+        console.log('                          ' + counter + 'm2');
+        console.log();
+        totalCounter += counter
+        forJson.area[mobilityKind].total = counter;
+    }
+    console.log('      ---------------------------');
+    console.log('                    ' + totalCounter + ' m2');
+    forJson.area.total = totalCounter;
+
     console.log();
-    console.log('   Areas\n', areaCounter);
+    console.log();
+    console.log('   - Length Breakdown');
+    var totalCounter = 0;
+    for (mobilityKind in lengthCounter) {
+        var counter = 0;
+        var fallback = lengthCounter[mobilityKind];
+        console.log('      ' + mobilityKind + ':');
+
+        forJson.length[mobilityKind] = {};
+
+        for (wayType in fallback) {
+            fallback[wayType] = Number(fallback[wayType].toFixed(2));
+            counter += fallback[wayType];
+            console.log('         - ' + wayType + ' = ' + fallback[wayType] + ' m');
+            forJson.length[mobilityKind][wayType] = fallback[wayType];
+        }
+        console.log('           ----------------------');
+        counter = Number(counter.toFixed(2));
+        console.log('                          ' + counter + 'm2');
+        console.log();
+        totalCounter += counter
+        forJson.length[mobilityKind].total = counter;
+    }
+    console.log('      ---------------------------');
+    console.log('                    ' + totalCounter + ' m2');
+    forJson.length.total = totalCounter;
+
+
+    console.log();
+    console.log();
+    console.log('   I M P O R T A N T');
+    console.log('   Add following to citymetadata.json:');
+    console.log();
+    console.log('      ' + JSON.stringify(forJson));
     console.log();
 }
