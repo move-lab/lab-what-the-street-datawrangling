@@ -612,13 +612,13 @@ function printSummary() {
         }
         console.log('           ----------------------');
         counter = Number(counter.toFixed(2));
-        console.log('                          ' + counter + 'm2');
+        console.log('                          ' + counter + ' m');
         console.log();
         totalCounter += counter
         forJson.length[mobilityKind].total = counter;
     }
     console.log('      ---------------------------');
-    console.log('                    ' + totalCounter + ' m2');
+    console.log('                    ' + totalCounter + ' m');
     forJson.length.total = totalCounter;
 
 
