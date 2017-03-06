@@ -7,6 +7,8 @@ var MongoClient = mongodb.MongoClient;
 var collectionName;
 var waysCollectionName;
 
+var mobilityKind;
+
 main();
 
 function main() {
@@ -31,27 +33,35 @@ function iterate(mongoUrl) {
         } else {
             stdout('      Connection successful');
             var collection = db.collection(collectionName);
+            if (collectionName === 'railtracksparking') {
+                mobilityKind = 'rail';
+            } else if (collectionName === 'railtracks') {
+                mobilityKind = 'rail';
+            } else if (collectionName === 'streets') {
+                mobilityKind = 'car';
+            } else if (collectionName === 'biketracks') {
+                mobilityKind = 'bike';
+            }
             var waysCollection = db.collection(waysCollectionName);
             var cursor = collection.find({});
 
             cursor.once('end', function() {
-                stdout('      Done');
+                stdout('      Finishing updating MongoDB');
                 setTimeout(function() {
                     db.close();
+                    stdout('      Done');
                     printSummary();
-                }, 2000);
+                }, 4000)
             });
 
             cursor.on('data', function(doc) {
                 cursor.pause();
-                var counter = 0;
                 var areaCounter = 0;
 
                 async.eachSeries(doc.ways, function iteratee(way, callback) {
-                    counter++;
                     waysCollection.findOne({ '_id': way }, function(err, waysCursor) {
-                        if (waysCursor.properties_derived && waysCursor.properties_derived.area) {
-                            areaCounter += waysCursor.properties_derived.area;
+                        if (waysCursor.properties_derived && waysCursor.properties_derived.area[mobilityKind]) {
+                            areaCounter += waysCursor.properties_derived.area[mobilityKind];
                         }
                         setImmediate(callback);
                     });
@@ -74,7 +84,7 @@ function printInstructions() {
     console.log('--------------');
     console.log('');
     console.log('   Example:');
-    console.log('   node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin --collection ways');
+    console.log('   node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin --collection railtracks');
     console.log('');
     console.log('   --mongodb: The connection to the mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin');
     console.log('   --collection: [required] The name of the collection you want to connect to');
