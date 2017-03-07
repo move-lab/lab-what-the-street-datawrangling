@@ -16,7 +16,7 @@ var defaultWidthInPixels = 592;
 var widthInMeter;
 var defaultWidthInMeter = defaultWidthInPixels * 1.2672955975; //value was measured
 var gapBetweeStreets; //in km
-var defaultGapBetweeStreets = 0.003;
+var defaultGapBetweeStreets = 0.002;
 
 var damping;
 var dampingDefault = 170;
