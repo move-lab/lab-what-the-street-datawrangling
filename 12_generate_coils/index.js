@@ -16,7 +16,10 @@ var defaultWidthInPixels = 592;
 var widthInMeter;
 var defaultWidthInMeter = defaultWidthInPixels * 1.2672955975; //value was measured
 var gapBetweeStreets; //in km
-var defaultGapBetweeStreets = 0.005;
+var defaultGapBetweeStreets = 0.003;
+
+var damping;
+var dampingDefault = 170;
 
 var onStreetParkingSpots;
 var onStreetParkingSpotsDefault = 0;
@@ -38,7 +41,7 @@ var strokeColor;
 var strokeColorDefault = '#6566CC';
 
 var strokeWidth;
-var strokeWidthDefault = 17;
+var strokeWidthDefault = 13;
 
 
 var counter = 0;
@@ -75,6 +78,8 @@ function main() {
         gapBetweeStreets = argv.gapBetweeStreets || defaultGapBetweeStreets;
         debugLimitStreets = argv.debugLimitStreets || defaultDebugLimitStreets;
         pretty = argv.pretty || true;
+
+        damping = argv.damping || dampingDefault;
 
         printActiveSettings();
         printProgressStart();
@@ -145,8 +150,8 @@ function printSummary() {
     console.log('--------------');
     console.log();
     console.log('   All streets were successfully coiled and exported');
-    console.log('   svg will be exported to /export/{collectionName}.svg');
-    console.log('   data was added to your specified mongoDB');
+    console.log('   - svg will be exported to /export/{collectionName}.svg');
+    console.log('   - data was added to your specified mongoDB');
     console.log();
 }
 
@@ -166,6 +171,7 @@ function printInstructions() {
     console.log('   --parkingArea: ... and their area (see citymetadata) (this is used to define the scale)');
     console.log('   --collection: The name of the collection you want to get information from and also save to');
     console.log('   --mongodb: The connection to the source mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin (it will expect a db ending with _derived as input and will out the same name but ending with _coiled)');
+    console.log('   --damping: [Optional] The amount of damping (around 100 [little damped] - 200 [damped a lot]). You might have to tweak this for the different mobility types - defaults to ' + dampingDefault + ' which works nicely with streets');
     console.log();
     console.log('   --strokeWidth: [optional] Defines the stroke width of the generated coils - defaults to ' + strokeWidthDefault);
     console.log('   --strokeColor: [optional] The color of the coiled streets/rails - defaults to ' + strokeColorDefault);
@@ -245,7 +251,7 @@ function coilStreets(data, callback) {
 
         var vectorStreet = unfold.getStreetWithVectors(street);
         var vectorStreetDivided = unfold.subdivideVectorStreet(vectorStreet, 1);
-        var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter, 150, 5);
+        var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter, damping, 5);
         positionOnCoilCounter += (coiledStreet.coilEnd - coiledStreet.coilStart)
         positionOnCoilCounter += gapBetweeStreets;
 
