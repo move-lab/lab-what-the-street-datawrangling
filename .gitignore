@@ -28,4 +28,4 @@ datapreparation/logs
 datapreparation/citydata
 
 lib/parse-osm-units/node_modules
-scripts/node_modules
+lib/node_modules
