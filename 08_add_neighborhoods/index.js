@@ -177,12 +177,14 @@ function printInstructions() {
     console.log('--------------');
     console.log("  HOW TO RUN  ");
     console.log('--------------');
+    console.log('About:');
+    console.log('  This script iterates over a collection adds neighborhood information to it.');
     console.log('');
     console.log('For svg:');
     console.log("  node index.js --svg yourSvgFile.svg --neighborhoods location/of/neighborhoods/geojsons");
     console.log('');
     console.log('For mongodb:');
-    console.log("  node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin --neighborhoods neighborhoodsGeojson.json");
+    console.log("  node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin --neighborhoods neighborhoodsGeojson.json --collection streets");
     console.log('');
     console.log("  - svg:           [For parking spaces] The svg file you want to be altered. Needs to contain the 'moovel_centroidlatlon' meta tag");
     console.log("  - mongodb:       [For ways] The connection to the mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin");
