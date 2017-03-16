@@ -178,7 +178,7 @@ function printInstructions() {
     console.log("  HOW TO RUN  ");
     console.log('--------------');
     console.log('About:');
-    console.log('  This script iterates over a collection adds neighborhood information to it.');
+    console.log('  This script iterates over a collection/svg and adds neighborhood information to it. Run for every mobility type separately (streets, biketracks, railtracks, railtracksparking)');
     console.log('');
     console.log('For svg:');
     console.log("  node index.js --svg yourSvgFile.svg --neighborhoods location/of/neighborhoods/geojsons");
