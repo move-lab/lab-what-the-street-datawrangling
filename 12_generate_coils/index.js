@@ -25,6 +25,9 @@ var onStreetParkingSpots;
 var onStreetParkingSpotsDefault = 0;
 var onStreetParking;
 
+var numberOfAllStreets;
+var additionalSpacePerStreet;
+
 var sizePerParkingSpot = 12; //m2
 
 var debugLimitStreets;
@@ -55,14 +58,14 @@ main();
 function main() {
     printInstructions();
 
-    if (argv.parkingSvgHeight && argv.parkingArea && argv.mongodb && argv.collection) {
+    if (argv.parkingSvgHeight && argv.parkingArea && (argv.mongodb || (argv.mongodbIn && argv.mongodbOut)) && argv.collection) {
         // Use car svg as reference
         mongodbIn = argv.mongodbIn || argv.mongodb;
-        
+
         if (argv.mongodbOut) {
             mongodbOut = argv.mongodbOut;
-        }else{
-            mongodbOut = (argv.mongodb).replace('_derived', '_coiled');
+        } else {
+            mongodbOut = (argv.mongodb).replace('_derived', '_coiled') || (argv.mongodbIn).replace('_derived', '_coiled');
         }
 
         strokeWidth = argv.strokeWidth || strokeWidthDefault;
@@ -108,10 +111,17 @@ function main() {
                             if (err) {
                                 console.log('ERR', err);
                             } else {
+                                numberOfAllStreets = docs.length;
+                                additionalSpacePerStreet = onStreetParking / numberOfAllStreets;
                                 async.detectSeries([docs], coilStreets, function(err, result) {
-                                    printSummary();
-                                    dbIn.close();
-                                    dbOut.close();
+                                    console.log();
+                                    console.log('   Waiting for db to finish ... ');
+                                    setTimeout(function() {
+                                        dbIn.close();
+                                        dbOut.close();
+
+                                        printSummary();
+                                    }, 20000)
                                 });
                             }
                         });
@@ -119,6 +129,9 @@ function main() {
                 });
             }
         });
+    } else {
+        console.log();
+        console.log('Please specify all required parameters');
     }
 }
 
@@ -162,10 +175,12 @@ function printInstructions() {
     console.log('--------------');
     console.log('');
     console.log('   Example:');
-    console.log('   node --max_old_space_size=8192 index.js --parkingSpots 103210 --parkingSvgHeight 20584 --parkingArea 8156098.06 --mongodbIn mongodb://127.0.0.1:27017/berlin_derived --collection streets --mongodbOut mongodb://127.0.0.1:27017/berlin_coiled');
+    console.log('   node --max_old_space_size=8192 index.js --parkingSpots 103210 --parkingSvgHeight 20584 --parkingArea 8156098.06 --mongodb mongodb://127.0.0.1:27017/berlin_derived --collection streets');
     console.log();
     console.log('   Important!');
-    console.log('   You might have to adjust the size of the strokeWidth. Best is to make a first try using --debugLimitStreets (something like 300) and look at the svg. It should be clearly a coil with little gaps between each slope (if it is not like that sometimes, that is ok), but if most overlap, adjust the stroke width size.');
+    console.log('   - You might have to adjust the size of the strokeWidth. Best is to make a first try using --debugLimitStreets (something like 300) and look at the svg. It should be clearly a coil with little gaps between each slope (if it is not like that sometimes, that is ok), but if most overlap, adjust the stroke width size.');
+    console.log('   - if the coil is too messy or too clean, you can also play with the damping value (see below)');
+    console.log('   - Define parkingSpots only when using coiling streets');
     console.log();
     console.log('   --parkingSvgHeight: The height of the packed parking spaces ...');
     console.log('   --parkingArea: ... and their area (see citymetadata) (this is used to define the scale)');
@@ -282,22 +297,24 @@ function coilStreets(data, callback) {
         delete vectorStreetDividedToPush.totalVariation;
         delete vectorStreetDividedToPush.origin;
 
+        coiledStreet.tags.area += additionalSpacePerStreet;
+
         // Store
         var toPush = {
             '_id': coiledStreet['_id'],
             'properties': {
                 'name': coiledStreet.tags.name,
-                'length': coiledStreet.tags.length,
-                'area': coiledStreet.tags.area,
+                'length': coiledStreet.tags.length.toFixed(2),
+                'area': coiledStreet.tags.area.toFixed(2),
                 'origin': coiledStreet.origin
             },
             'coiled': coiledStreetToPush,
             'original': vectorStreetDividedToPush
-        };
+        }
 
         if (coiledStreet.tags.neighborhood) {
             toPush.properties.neighborhood = coiledStreet.tags.neighborhood;
-        };
+        }
 
         jsonToSave.push(toPush);
         if (debugLimitStreets === null) {
@@ -305,7 +322,7 @@ function coilStreets(data, callback) {
         } else {
             stdout('      Coiling ' + (i + 1) + '/' + debugLimitStreets + ' [Debug Mode]');
         }
-    };
+    }
     stdout('      Done');
 
 
@@ -329,7 +346,7 @@ function coilStreets(data, callback) {
     collectionOut.drop();
 
     for (var i = 0; i < numberOfPieces; i++) {
-        var piece = jsonToSave[i]
+        var piece = jsonToSave[i];
         stdout('      Storing Street ' + (i + 1) + '/' + numberOfPieces);
         collectionOut.insert(piece);
     };
