@@ -337,7 +337,8 @@ function getNumberOfLanes(way) {
                 if (isNaN(way.properties.lanes.lanes)) {
                     // This should never happen
                     console.log("Lane information is NaN", way);
-                    process.exit();
+                    //process.exit();
+                    lanes = null;
                 } else {
                     // Read number of lanes
                     lanes = Number(way.properties.lanes.lanes);
@@ -349,7 +350,8 @@ function getNumberOfLanes(way) {
                 if (isNaN(way.properties.lanes.forward)) {
                     // This should never happen
                     console.log("Lane information is NaN", way);
-                    process.exit();
+                    forward = null;
+                    //process.exit();
                 } else {
                     // Read number of lanes forward
                     forward = Number(way.properties.lanes.forward);
@@ -361,7 +363,8 @@ function getNumberOfLanes(way) {
                 if (isNaN(way.properties.lanes.backward)) {
                     // This should never happen
                     console.log("Lane information is NaN", way);
-                    process.exit();
+                    //process.exit();
+                    backward = null;
                 } else {
                     // Read number of lanes backward
                     backward = Number(way.properties.lanes.backward);
