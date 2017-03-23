@@ -303,7 +303,6 @@ function coilStreets(data, callback) {
         var toPush = {
             '_id': coiledStreet['_id'],
             'properties': {
-                'name': coiledStreet.tags.name,
                 'length': coiledStreet.tags.length.toFixed(2),
                 'area': coiledStreet.tags.area.toFixed(2),
                 'origin': coiledStreet.origin
@@ -314,6 +313,10 @@ function coilStreets(data, callback) {
 
         if (coiledStreet.tags.neighborhood) {
             toPush.properties.neighborhood = coiledStreet.tags.neighborhood;
+        }
+
+        if (coiledStreet.tags.name) {
+            toPush.properties.name = coiledStreet.tags.name;
         }
 
         jsonToSave.push(toPush);
@@ -357,7 +360,7 @@ function coilStreets(data, callback) {
     console.log();
     console.log('   6. Saving Svg');
     var wstream2 = fs.createWriteStream(saveAs + '.svg');
-    var svgPieces = coil.generateSvgPieces(coiledStreets, meterPerPixel, parkingSvgHeight, strokeColor, strokeWidth);
+    var svgPieces = coil.generateSvgPieces(coiledStreets, meterPerPixel, parkingSvgHeight, strokeColor, strokeWidth, coiledStreet.tags.name || null, coiledStreet.tags.neighborhood || null);
     var numberOfSvgPieces = svgPieces.length;
     for (var i = 0; i < numberOfSvgPieces; i++) {
         stdout('      Saving Path ' + (i + 1) + '/' + numberOfSvgPieces);
