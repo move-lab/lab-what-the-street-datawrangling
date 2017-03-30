@@ -74,7 +74,7 @@ function main() {
         collectionNameOut = argv.collectionOut || argv.collection || collectionNameIn;
         parkingSvgHeight = argv.parkingSvgHeight;
         parkingArea = argv.parkingArea;
-        
+
         widthInMeter = argv.widthInMeter || defaultWidthInMeter;
         widthInPixels = argv.widthInPixels || defaultWidthInPixels;
         gap = argv.gap || defaultGap;
@@ -85,7 +85,7 @@ function main() {
 
         damping = argv.damping || dampingDefault;
 
-        printActiveSettings();
+        saveSettings();
         printProgressStart();
 
         console.log();
@@ -140,24 +140,26 @@ function main() {
     }
 }
 
-function printActiveSettings() {
-    console.log();
-    console.log('--------------');
-    console.log('   SETTINGS      ');
-    console.log('--------------');
-    console.log();
-    console.log('   - widthInMeter: ' + widthInMeter);
-    console.log('   - parkingSvgHeight: ' + parkingSvgHeight);
-    console.log('   - parkingArea: ' + parkingArea);
-    console.log('   - widthInPixels: ' + widthInPixels);
-    console.log('   - gap: ' + gap);
-    console.log('   - pretty: ' + pretty);
-    if (limit === null) {
-        console.log('   - limit: no');
-    } else {
-        console.log('   - limit to ' + limit);
+function saveSettings() {
+    var settings = {
+        'widthInMeter': widthInMeter,
+        'parkingArea': parkingArea,
+        'widthInPixels': widthInPixels,
+        'gap': gap,
+        'limit': limit,
+        'damping': damping,
+        'onStreetParkingSpots': onStreetParkingSpots,
+        'strokeColor': strokeColor,
+        'strokeWidth': strokeWidth
     }
-    console.log();
+
+    var name = collectionNameIn;
+    var saveAs = path.join(__dirname, 'export', name + '_settings.json');
+    fs.writeFile(saveAs, JSON.stringify(settings), function(err) {
+        if (err) {
+            return console.log(err);
+        }
+    });
 }
 
 function printSummary() {
@@ -195,7 +197,7 @@ function printInstructions() {
     console.log('     - Define parkingSpots only when using coiling streets for cars');
     console.log('     - Run with more RAM allocation (--max_old_space_size=8192) as in the example');
     console.log();
-    console.log('   Settings per city:');    
+    console.log('   Settings per city:');
     console.log('     --parkingSvgHeight: The height of the packed parking spaces');
     console.log('     --parkingArea: ... and their area (see citymetadata)');
     console.log('       Those two parameters define the scale of m per px, so one setting works for all types of mobility');
