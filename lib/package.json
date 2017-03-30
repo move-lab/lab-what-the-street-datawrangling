@@ -1,0 +1,10 @@
+{
+  "name": "lib",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "Stephan Bogner",
+  "dependencies": {
+    "turf": "3.0.14"
+  }
+}
