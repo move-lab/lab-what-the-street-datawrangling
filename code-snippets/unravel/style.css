@@ -1,0 +1,45 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Helvetica Neue', sans-serif;
+}
+
+h1 {
+    font-size: 3rem;
+    line-height: 2.8rem;
+    width: 595px;
+    margin: auto;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+#coil {
+    display: block;
+    margin: auto;
+}
+
+#map {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+#map, #content{
+    transition: opacity 0.3s;
+}
+
+.fade{
+    opacity: 0.1;
+}
+
+.invisible{
+    opacity: 0;
+}
+
+#content{
+    width: 100%;
+    margin: auto;
+    position: absolute;
+}

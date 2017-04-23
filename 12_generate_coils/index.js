@@ -17,7 +17,6 @@ var widthInMeter;
 var defaultWidthInMeter = defaultWidthInPixels * 1.2672955975; //value was measured
 var gap; //in km
 var defaultGap = 0.002;
-
 var damping;
 var dampingDefault = 170;
 
