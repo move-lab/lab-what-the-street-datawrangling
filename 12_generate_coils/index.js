@@ -29,7 +29,7 @@ var additionalSpacePerStreet;
 
 var sizePerParkingSpot = 12; //m2
 
-var limit;
+var limit = null;
 var defaultLimit = null;
 var parkingSvgHeight;
 var mongodbIn;
@@ -143,6 +143,7 @@ function saveSettings() {
     var settings = {
         'widthInMeter': widthInMeter,
         'parkingArea': parkingArea,
+        'parkingSvgHeight': parkingSvgHeight,
         'widthInPixels': widthInPixels,
         'gap': gap,
         'limit': limit,
@@ -187,7 +188,7 @@ function printInstructions() {
     console.log('--------------');
     console.log('');
     console.log('   Example:');
-    console.log('     node --max_old_space_size=8192 index.js --parkingSpots 103210 --parkingSvgHeight 20584 --parkingArea 8156098.06 --mongodb mongodb://127.0.0.1:27017/berlin_derived --collection streets');
+    console.log('     node --max_old_space_size=8192 index.js --parkingSvgHeight 20584 --parkingArea 8156098.06 --mongodb mongodb://127.0.0.1:27017/berlin_derived --collection streets');
     console.log();
     console.log('   Note:');
     console.log('     - You might have to adjust the size of the strokeWidth. Best is to make a first try using --limit (something like 300) and look at the svg.');
@@ -385,7 +386,7 @@ function coilStreets(data, callback) {
     var wstream2 = fs.createWriteStream(saveAs + '.svg');
     var svgWidth = widthInPixels + 40;
     var svgHeight = coilHeightInPixels + 40;
-    var svgPieces = coil.generateSvgPieces(coiledStreets, meterPerPixel, svgWidth, strokeColor, strokeWidth, coiledStreet.tags.name || null, coiledStreet.tags.neighborhood || null);
+    var svgPieces = coil.generateSvgPieces(coiledStreets, meterPerPixel, svgWidth, strokeColor, strokeWidth);
     var numberOfSvgPieces = svgPieces.length;
     for (var i = 0; i < numberOfSvgPieces; i++) {
         stdout('      Saving Path ' + (i + 1) + '/' + numberOfSvgPieces);
