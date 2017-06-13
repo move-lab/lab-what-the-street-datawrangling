@@ -60,13 +60,22 @@ function iterate(mongoUrl) {
 
                 async.eachSeries(doc.ways, function iteratee(way, callback) {
                     waysCollection.findOne({ '_id': way }, function(err, waysCursor) {
-                        if (waysCursor.properties_derived && waysCursor.properties_derived.area[mobilityKind]) {
-                            areaCounter += waysCursor.properties_derived.area[mobilityKind];
+                        if (waysCursor.properties_derived && waysCursor.properties_derived.areaEstimate[mobilityKind]) {
+                            areaCounter += waysCursor.properties_derived.areaEstimate[mobilityKind];
+
+                            if (areaCounter == null) {
+                                throw way;
+                            }
                         }
                         setImmediate(callback);
                     });
 
                 }, function() {
+                    if (areaCounter === 0) {
+                        console.log();
+                        console.log('It appears that the ways attribute is not present in the data');
+                        console.log();
+                    };
                     stdout('      ' + doc.tags.name + ' (area = ' + areaCounter + ' m2)');
                     doc.tags.area = areaCounter;
                     collection.update({ _id: doc["_id"] }, doc);
@@ -84,7 +93,7 @@ function printInstructions() {
     console.log('--------------');
     console.log('');
     console.log('   Example:');
-    console.log('   node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin --collection railtracks');
+    console.log('   node index.js --mongodb mongodb://127.0.0.1:27017/berlin_derived --collection railtracks');
     console.log('');
     console.log('   --mongodb: The connection to the mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin');
     console.log('   --collection: [required] The name of the collection you want to connect to');
