@@ -56,8 +56,9 @@ function getOneNeighborhood(file, callback) {
 
 function getAllNeighborhoods(directory) {
     dir.readFiles(directory, {
-            match: /.geojson$/,
-            exclude: /^\./
+            "match": /.geojson$/,
+            "exclude": /^\./,
+            "recursive": false
         }, function(err, content, next) {
             if (err) throw err;
             var neighborhoods = JSON.parse(content).features;
@@ -184,7 +185,7 @@ function printInstructions() {
     console.log("  node index.js --svg yourSvgFile.svg --neighborhoods location/of/neighborhoods/geojsons");
     console.log('');
     console.log('For mongodb:');
-    console.log("  node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin --neighborhoods neighborhoodsGeojson.json --collection streets");
+    console.log("  node index.js --mongodb mongodb://127.0.0.1:27017/berlin_derived --neighborhoods neighborhoodsGeojson.json --collection streets");
     console.log('');
     console.log("  - svg:           [For parking spaces] The svg file you want to be altered. Needs to contain the 'moovel_centroidlatlon' meta tag");
     console.log("  - mongodb:       [For ways] The connection to the mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin");
