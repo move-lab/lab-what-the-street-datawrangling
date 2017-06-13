@@ -191,7 +191,7 @@ function calculateAreaAndUpdateEntry(perMeterAndLane) {
                 }
 
                 // Update entry
-                way.properties_derived.area = output;
+                way.properties_derived.areaEstimate = output;
                 collection.update({ _id: way._id }, way, function() {
                     cursor.resume();
                 });
@@ -391,6 +391,9 @@ function getNumberOfLanes(way) {
                 } else if (way.properties.oneway.oneway == -1) {
                     // See http://wiki.openstreetmap.org/wiki/Key:oneway#Normal_use
                     oneway = true;
+                }else if (way.properties.oneway.oneway == 'reversible') {
+                    // See https://wiki.openstreetmap.org/wiki/Tag:oneway%3Dreversible - e.g. 27264847
+                    oneway = true;
                 } else {
                     // This should never happen
                     console.log(way);
@@ -467,14 +470,15 @@ function addFallbacksToMissingOccurences(occurences) {
     }
 
     // Fallback for 
+    var log = 'Value exists or Fallback used:\n';
     for (mobilityKind in fallbacks) {
         var fallback = fallbacks[mobilityKind];
-        console.log('      ' + mobilityKind + ':');
+        log += '      ' + mobilityKind + ':\n'
         for (wayType in fallback) {
             if (occurences[mobilityKind][wayType]) {
-                console.log('         - ' + wayType + ': Value exists');
+                log += '         - ' + wayType + ': Value exists\n';
             } else {
-                console.log('         - ' + wayType + ': Fallback');
+                log += '         - ' + wayType + ': Fallback\n';
                 if (mobilityKind === 'rail' && wayType === 'tram') { // Because they run on this way type
                     occurences['rail']['tram'] = occurences['car']['tertiary'] || fallbacks['car']['tertiary'];
                 } else {
@@ -482,33 +486,47 @@ function addFallbacksToMissingOccurences(occurences) {
                 }
             }
         }
-        console.log();
+        log += '\n';
     }
+    console.log(log);
+
+    fs.writeFileSync('log_' + getCityName() + '.txt', log);
     return occurences;
+}
+
+function getCityName(){
+    var pathPieces = argv.mongodb.split('/');
+    var cityName = pathPieces[pathPieces.length-1];
+    cityName = cityName.replace('_derived', '');
+    return cityName;
 }
 
 function processOccurences(occurences) {
     console.log('   3. Get average area per meter and lane for ');
+
     var perMeterAndLane = {
         "car": {},
         "bike": {},
         "rail": {}
     }
 
+    var log = '\nResulting Values:\n';
     for (mobilityKind in occurences) {
         var occurence = occurences[mobilityKind];
-        console.log('      ' + mobilityKind + ':');
+        log += '      ' + mobilityKind + ':\n';
         for (wayType in occurence) {
             var entry = occurence[wayType];
             var length = entry.length;
             var area = entry.area;
             var areaPerMeter = area / length;
             perMeterAndLane[mobilityKind][wayType] = areaPerMeter;
-            console.log('         - ' + wayType + ': ' + areaPerMeter.toFixed(3) + ' m2');
+            log += '         - ' + wayType + ': ' + areaPerMeter.toFixed(3) + ' m2\n';
         }
-        console.log();
+        log += '\n';
     }
 
+    console.log(log);
+    fs.appendFileSync('log_' + getCityName() + '.txt', log);
     return perMeterAndLane;
 }
 
@@ -542,7 +560,7 @@ function printInstructions() {
     console.log('--------------');
     console.log('');
     console.log('   Example:');
-    console.log('   node index.js --mongodb mongodb://username:password@ip:port/db?authSource=admin');
+    console.log('   node index.js --mongodb mongodb://127.0.0.1:27017/berlin_derived');
     console.log('');
     console.log('   --mongodb: The connection to the mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin');
     console.log();
@@ -625,11 +643,5 @@ function printSummary() {
     forJson.length.total = totalCounter;
 
 
-    console.log();
-    console.log();
-    console.log('   I M P O R T A N T');
-    console.log('   Add following to citymetadata.json:');
-    console.log();
-    console.log('      ' + JSON.stringify(forJson));
     console.log();
 }
