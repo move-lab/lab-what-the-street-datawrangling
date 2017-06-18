@@ -139,35 +139,6 @@ function addSource(name) {
     });
 }
 
-function calculateBendWay(vectors){
-    var entireBendWay = 0;
-    for (var i = 0; i < vectors.length; i++) {
-        var vector = vectors[i];
-        var vectorLength = vector.distance;
-        var deltaAngle = vector.deltaBearing;
-        var radius = vectorLength;
-        var circumference = radius * 2 * Math.PI;
-        var circleFraction = circumference/360*deltaAngle;
-        var bendWay = Math.abs(circleFraction);
-        entireBendWay += bendWay;
-    }
-    return entireBendWay;
-}
-
-function getLongestTranslation(vectors){
-    var longestTranslation = 0;
-    for (var i = 0; i < vectors.length; i++) {
-        var vector = vectors[i];
-        var vectorLength = vector.distance;
-        if (vector.type !== 'street') {
-            if (vectorLength > longestTranslation) {
-                longestTranslation = vectorLength;
-            }
-        }
-    }
-    return longestTranslation;
-}
-
 $.easing.easeOutBounce = function(x, t, b, c, d) {
     if ((t /= d) < (1 / 2.75)) {
         return c * (7.5625 * t * t) + b;
