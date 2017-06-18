@@ -8,6 +8,8 @@ var collectionName;
 var waysCollectionName;
 
 var mobilityKind;
+var fileName;
+var lastLetter = '';
 
 main();
 
@@ -21,8 +23,22 @@ function main() {
         printProgressStart();
         console.log();
         console.log('   1. Iterating over Collection');
+        fileName = getCityName() + '_' + collectionName + '.html';
+        fs.writeFileSync(fileName, getHtmlStart());
+        fs.appendFileSync(fileName, '<h1>' + getCityName() + ': ' + collectionName + '</h1');
+        fs.appendFileSync(fileName, '<table>');
+
+
         iterate(argv.mongodb);
     }
+}
+
+function getHtmlStart() {
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + (getCityName() + ': ' + collectionName) + '</title><style>h2{ margin-bottom: 0.5rem;margin-top: 4rem;} body{font-family: sans-serif; margin: 8rem; padding: 0; text-align:left;} tr:nth-child(even) {background-color: #FAFAFA;} th{font-weight: 400; color: #000; padding: 10px 30px 10px 0;} a:visited{color: #A6C4FF;} a:link{text-decoration: none; color: #FF6819; }</style></head><body>'
+}
+
+function getHtmlEnd() {
+    return '</body></html>';
 }
 
 function iterate(mongoUrl) {
@@ -48,6 +64,8 @@ function iterate(mongoUrl) {
             cursor.once('end', function() {
                 stdout('      Finishing updating MongoDB');
                 setTimeout(function() {
+                    fs.appendFileSync(fileName, '</table>');
+                    fs.appendFileSync(fileName, getHtmlEnd());
                     db.close();
                     stdout('      Done');
                     printSummary();
@@ -78,12 +96,56 @@ function iterate(mongoUrl) {
                     };
                     stdout('      ' + doc.tags.name + ' (area = ' + areaCounter + ' m2)');
                     doc.tags.area = areaCounter;
+
+
+                    var coord = getMiddleOfArray(objectToArray(doc.nodes));
+                    var url = getGoogleMapsLink(coord.lat, coord.lon);
+                    //var urlName = doc.tags.name || ('id:' + doc._id);
+                    var urlName = doc.tags.name;
+                    if (urlName === '') {
+                        urlName = doc._id;
+                    }
+                    var averageWidth = doc.tags.area / doc.tags.length;
+                    var currentLetter = urlName.charAt(0);
+
+                    var html = '';
+
+                    if (currentLetter !== lastLetter) {
+                        lastLetter = currentLetter;
+                        html += '</table>\n'
+                        html += '<h2>' + currentLetter + '</h2>\n'
+                        html += '<table>\n'
+                    }
+
+                    html += '<tr>\n'
+                    html += '<th><a target="_blank" href="' + url + '">' + urlName + '</a></th>\n';
+                    html += '<th>' + Math.round(averageWidth * 100) / 100 + ' m</th>\n'
+                    html += '</tr>\n'
+
+                    fs.appendFileSync(fileName, html);
+
+
                     collection.update({ _id: doc["_id"] }, doc);
                     cursor.resume();
                 });
             });
         }
     });
+}
+
+function getGoogleMapsLink(lat, lon, zoomlevel) {
+    zoomlevel = zoomlevel || '70m'
+    return 'https://www.google.de/maps/@' + lat + ',' + lon + ',' + zoomlevel + '/data=!3m1!1e3';
+}
+
+function getMiddleOfArray(arr) {
+    var middleIndex = Math.floor(arr.length / 2);
+    return arr[middleIndex];
+}
+
+function objectToArray(obj) {
+    return Object.keys(obj).map(function(key) {
+        return obj[key]; });
 }
 
 function printInstructions() {
@@ -119,6 +181,17 @@ function printActiveSettings() {
     console.log('   - mongodb: ' + argv.mongodb);
     console.log('   - collection: ' + collectionName);
     console.log('   - ways collection: ' + waysCollectionName);
+}
+
+function getCityName() {
+    var pathPieces = argv.mongodb.split('/');
+    var cityName = pathPieces[pathPieces.length - 1];
+    cityName = cityName.replace('_derived', '');
+    return cityName;
+}
+
+function getTimeStamp() {
+    return Math.round(new Date().getTime() / 1000)
 }
 
 function printProgressStart() {
