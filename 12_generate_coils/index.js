@@ -1,5 +1,4 @@
 var fs = require('fs');
-//var dir = require('node-dir');
 var turf = require('turf');
 var path = require('path');
 var argv = require('minimist')(process.argv.slice(2));
@@ -12,13 +11,22 @@ require('../lib/unfold.js');
 var MongoClient = mongodb.MongoClient;
 
 var widthInPixels;
-var defaultWidthInPixels = 570;
+var defaultWidthInPixels = 588;
+var meterPerPixel;
+var defaultMeterPerPixel = 1.2672955975;
 var widthInMeter;
-var defaultWidthInMeter = defaultWidthInPixels * 1.2672955975; //value was measured
-var gap; //in km
-var defaultGap = 0.002;
+var defaultWidthInMeter = defaultWidthInPixels * defaultMeterPerPixel; //value was measured
+var gap;
+var gapPercentage;
+//var defaultGapPercentage = 0.015;
+var defaultGapPercentage = 0;
 var damping;
-var dampingDefault = 170;
+//var dampingDefault = 170;
+
+var adaptSize;
+var adaptSizeDefault = 1;
+
+var adaptiveStroke = true;
 
 var onStreetParkingSpots;
 var onStreetParkingSpotsDefault = 0;
@@ -29,7 +37,7 @@ var additionalSpacePerStreet;
 
 var sizePerParkingSpot = 12; //m2
 
-var limit = null;
+var limit;
 var defaultLimit = null;
 var parkingSvgHeight;
 var mongodbIn;
@@ -43,7 +51,33 @@ var strokeColor;
 var strokeColorDefault = '#6566CC';
 
 var strokeWidth;
-var strokeWidthDefault = 13;
+var strokeWidthDefault = {
+    'streets': 11,
+    'railtracks': 5,
+    'railtracksparking': 5,
+    'biketracks': 5
+};
+
+var fileNameLUT = {
+    'streets': 'car-tracks',
+    'railtracks': 'rail-tracks',
+    'railtracksparking': 'rail-parking',
+    'biketracks': 'bike-tracks'
+}
+
+var dampingDefault = {
+    'streets': 1000,
+    'railtracks': 1000,
+    'railtracksparking': 700,
+    'biketracks': 1000
+}
+
+var mobilityType = {
+    'streets': 'car',
+    'railtracks': 'rail',
+    'railtracksparking': 'rail',
+    'biketracks': 'bike'
+}
 
 
 var counter = 0;
@@ -67,24 +101,40 @@ function main() {
             mongodbOut = (argv.mongodb).replace('_derived', '_coiled') || (argv.mongodbIn).replace('_derived', '_coiled');
         }
 
-        strokeWidth = argv.strokeWidth || strokeWidthDefault;
-        strokeColor = argv.strokeColor || strokeColorDefault;
+        adaptSize = argv.adaptSize || adaptSizeDefault;
+
+        alternatingStrokeColor = argv.alternatingStrokeColor || false;
         collectionNameIn = argv.collectionIn || argv.collection;
         collectionNameOut = argv.collectionOut || argv.collection || collectionNameIn;
+
+        strokeWidth = argv.strokeWidth || strokeWidthDefault[collectionNameIn];
+        strokeColor = argv.strokeColor || strokeColorDefault;
+
         parkingSvgHeight = argv.parkingSvgHeight;
         parkingArea = argv.parkingArea;
 
-        widthInMeter = argv.widthInMeter || defaultWidthInMeter;
         widthInPixels = argv.widthInPixels || defaultWidthInPixels;
-        gap = argv.gap || defaultGap;
+        widthInPixels -= strokeWidth; //so all coils are the same width regardless of thickness
+
+        meterPerPixel = argv.meterPerPixel || defaultMeterPerPixel;
+        widthInMeter = meterPerPixel*widthInPixels;
+
+        gapPercentage = argv.gap || defaultGapPercentage;
+        gap = calculateGap();
         limit = argv.limit || defaultLimit;
         onStreetParkingSpots = argv.parkingSpots || onStreetParkingSpotsDefault;
 
         pretty = argv.pretty || true;
 
-        damping = argv.damping || dampingDefault;
+        damping = argv.damping || dampingDefault[collectionNameIn];
+        damping = Number(damping);
+
+        if (isNaN(damping)) {
+            throw 'please only specify one damping value and use a number'
+        }
 
         saveSettings();
+
         printProgressStart();
 
         console.log();
@@ -139,23 +189,72 @@ function main() {
     }
 }
 
+function calculateGap(){
+    return (widthInMeter * gapPercentage + strokeWidth * meterPerPixel * 1.2) / 1000;
+}
+
+function getCityName() {
+    var pathPieces = mongodbIn.split('/');
+    var cityName = pathPieces[pathPieces.length - 1];
+    cityName = cityName.replace('_derived', '');
+    return cityName;
+}
+
+function getTimeStamp() {
+    return Math.round(new Date().getTime() / 1000)
+}
+
 function saveSettings() {
-    var settings = {
-        'widthInMeter': widthInMeter,
-        'parkingArea': parkingArea,
-        'parkingSvgHeight': parkingSvgHeight,
-        'widthInPixels': widthInPixels,
-        'gap': gap,
-        'limit': limit,
-        'damping': damping,
-        'onStreetParkingSpots': onStreetParkingSpots,
-        'strokeColor': strokeColor,
-        'strokeWidth': strokeWidth
+    var settings = '';
+    settings += ' --mongodb ' + mongodbIn;
+    settings += ' --collection ' + collectionNameIn;
+    settings += ' --parkingArea ' + parkingArea;
+    settings += ' --parkingSvgHeight ' + parkingSvgHeight;
+
+    if (gapPercentage !== defaultGapPercentage) {
+        settings += ' --gap ' + gap;
     }
 
-    var name = collectionNameIn;
-    var saveAs = path.join(__dirname, 'export', name + '_settings.json');
-    fs.writeFile(saveAs, JSON.stringify(settings), function(err) {
+    if (widthInPixels !== defaultWidthInPixels) {
+        settings += ' --widthInPixels ' + widthInPixels;
+    }
+
+    if (widthInMeter !== defaultWidthInMeter) {
+        settings += ' --widthInMeter ' + widthInMeter;
+    }
+
+    // if (damping !== dampingDefault) {
+    //     settings += ' --damping ' + damping;
+    // }
+
+    if (strokeColor !== strokeColorDefault) {
+        settings += ' --strokeColor ' + strokeColor;
+    }
+
+    if (strokeWidth !== strokeWidthDefault) {
+        settings += ' --strokeWidth ' + strokeWidth;
+    }
+
+    if (alternatingStrokeColor !== false) {
+        settings += ' --alternatingStrokeColor ' + alternatingStrokeColor;
+    }
+
+    if (limit !== null) {
+        settings += ' --limit ' + limit;
+    }
+
+    if (onStreetParkingSpots !== 0) {
+        settings += ' --onStreetParkingSpots ' + onStreetParkingSpots;
+    }
+
+    var fileName = 'settings_' + collectionNameIn + '.txt';
+
+    var dir = path.join(__dirname, 'export', getCityName());
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+    }
+    var saveAs = path.join(__dirname, 'export', getCityName(), fileName);
+    fs.writeFile(saveAs, settings, function(err) {
         if (err) {
             return console.log(err);
         }
@@ -169,9 +268,7 @@ function printSummary() {
     console.log('   COMPLETE      ');
     console.log('--------------');
     console.log();
-    console.log('   All streets/rails were successfully coiled and exported');
-    console.log('   - svg will be exported to /export/{collectionName}.svg');
-    console.log('   - data was added to your specified mongoDB');
+    console.log('   All streets/rails were successfully coiled and exported (see export folder and {city}_coiled mongodb)');
     console.log();
 }
 
@@ -188,44 +285,12 @@ function printInstructions() {
     console.log('--------------');
     console.log('');
     console.log('   Example:');
-    console.log('     node --max_old_space_size=8192 index.js --parkingSvgHeight 20584 --parkingArea 8156098.06 --mongodb mongodb://127.0.0.1:27017/berlin_derived --collection streets');
+    console.log('     node --max_old_space_size=8192 index.js --parkingSvgHeight 20584 --parkingArea 8156098.06 --mongodb mongodb://127.0.0.1:27017/berlin_derived --collection streets --meterPerPixel 1.2672955975');
     console.log();
-    console.log('   Note:');
-    console.log('     - You might have to adjust the size of the strokeWidth. Best is to make a first try using --limit (something like 300) and look at the svg.');
-    console.log('       It should be clearly a coil with little gaps between each slope (if it is not like that sometimes, that is ok), but if most overlap, adjust the stroke width size.');
-    console.log('     - if the coil is too messy or too clean, you can also play with the damping value (see below)');
-    console.log('     - Define parkingSpots only when using coiling streets for cars');
-    console.log('     - Run with more RAM allocation (--max_old_space_size=8192) as in the example');
-    console.log();
-    console.log('   Settings per city:');
-    console.log('     --parkingSvgHeight: The height of the packed parking spaces');
-    console.log('     --parkingArea: ... and their area (see citymetadata)');
-    console.log('       Those two parameters define the scale of m per px, so one setting works for all types of mobility');
-    console.log('     --mongodb: The connection to the source mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin');
-    console.log('       (it will expect a db ending with _derived as input and will out the same name but ending with _coiled)');
-    console.log();
-    console.log('   Settings per form of mobility:');
-    console.log('     --collection: The name of the collection you want to get information from and also save to');
-    console.log('     --damping: [Optional] The amount of damping (around 100 [little damped] - 200 [damped a lot]).');
-    console.log('       You might have to tweak this for the different mobility types - defaults to ' + dampingDefault + ' which works nicely with streets');
-    console.log('     --gap: [optional] Gap between the individual streets/rails in km - default: ' + defaultGap);
-    console.log('     --strokeWidth: [optional] Defines the stroke width of the generated coils - defaults to ' + strokeWidthDefault);
-    console.log();
-    console.log('   Extra Settings when coiling streets for cars:');
-    console.log('     --parkingSpots: [optional] Number of on street parking spots (take from citymetadata.json) - defaults to ' + onStreetParkingSpotsDefault);
-    console.log();
-    console.log('   Debug Options:');
-    console.log('     --limit: [Debug] Limit how many streets/rails should get coiled');
-    console.log();
-    console.log('   More options (which by default you will not have to use):');
-    console.log('     --strokeColor: [optional] The color of the coiled streets/rails - defaults to ' + strokeColorDefault);
-    console.log('     --mongodbIn: [optional] The connection to the source mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin (defaults to --mongodb)');
-    console.log('     --mongodbOut: [optional] ... export mongoDB as url. E.g.: mongodb://username:password@ip:port/db?authSource=admin (defaults to --mongodb and changes the suffix)');
-    console.log('     --collectionIn: [optional] The name of the collection you want to get information from defaults to --collection');
-    console.log('     --collectionOut: [optional] The name of the collection you want to output to - defaults to the same name as --collection --collectionIn');
-    console.log('     --widthInMeter: [optional] Width of the street coil in meters (scale) - default: ' + defaultWidthInMeter);
-    console.log('     --widthInPixels: [optional] Width of the street coil in pixels (scale) - default: ' + defaultWidthInPixels);
-    console.log();
+    console.log('   Note: There are many settings to define the coil, but what you have to do essentially is:');
+    console.log('      1. Open the readme');
+    console.log('      2. Go to "Commands to run"');
+    console.log('      3. Run every command after each other listed there');
 }
 
 function stdout(str) {
@@ -256,6 +321,8 @@ function coilStreets(data, callback) {
     var entireArea = 0;
     for (var i = 0; i < streets.length; i++) {
         var street = streets[i];
+        street.tags.area = street.tags.area * adaptSize;
+
         lengthInM += street.tags.length;
         lengthInM += gap * 1000;
         entireArea += street.tags.area;
@@ -269,6 +336,8 @@ function coilStreets(data, callback) {
     pixelPerMeter = widthInPixels / widthInMeter;
     var coilHeightInPixels = entireArea / parkingArea * parkingSvgHeight;
 
+    //saveStats(lengthInM, entireArea, coilHeightInPixels);
+
     console.log('      Done');
     console.log('      - Length: ' + lengthInM + ' m');
     console.log('      - Area: ' + entireArea + ' m2');
@@ -276,30 +345,44 @@ function coilStreets(data, callback) {
 
 
     console.log();
-    console.log('   4. Coiling Streets');
+    console.log('   4. Coiling');
     var coiledStreets = [];
     //var vectorStreets = [];
     var positionOnCoilCounter = 0;
     var numberOfStreets = streets.length;
     coil.setProperties(widthInMeter, 5);
+
+    var numberOfHorizontalLines = lengthInM/widthInMeter;
+
+    if (adaptiveStroke) {
+        strokeWidth = coilHeightInPixels/numberOfHorizontalLines - 2;
+        gap = calculateGap();
+    };
+    //console.log(numberOfHorizontalLines);
+
     var properties = coil.setHeight(coilHeightInPixels, lengthInM, pixelPerMeter);
 
     // Coil
     for (var i = 0; i < numberOfStreets; i++) {
+        if (i > limit - 1 && limit != null) {
+            break;
+        }
+
         var street = streets[i];
 
         var vectorStreet = unfold.getStreetWithVectors(street);
         var vectorStreetDivided = unfold.subdivideVectorStreet(vectorStreet, 1);
         var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter, damping, 5);
+        //console.log(vectorStreetDivided);
+        // for (var i = 0; i < vectorStreetDivided.vectors.length; i++) {
+        //     console.log(vectorStreetDivided.vectors[i]);
+        // };
+
         positionOnCoilCounter += (coiledStreet.coilEnd - coiledStreet.coilStart)
         positionOnCoilCounter += gap;
 
         coiledStreets.push(coiledStreet);
         //vectorStreets.push( vectorStreetDivided );
-
-        if (i > limit && limit != null) {
-            break;
-        }
 
         // Remove Redundancy
         var coiledStreetToPush = JSON.parse(JSON.stringify(coiledStreet));
@@ -353,8 +436,8 @@ function coilStreets(data, callback) {
     stdout('      Done');
 
 
-    var name = collectionNameIn;
-    var saveAs = path.join(__dirname, "export", name);
+    var name = fileNameLUT[collectionNameIn];
+    var saveAs = path.join(__dirname, 'export', getCityName(), name + '.svg');
     var prettyA = null;
     var prettyB = 4;
 
@@ -374,7 +457,7 @@ function coilStreets(data, callback) {
 
     for (var i = 0; i < numberOfPieces; i++) {
         var piece = jsonToSave[i];
-        stdout('      Storing Street ' + (i + 1) + '/' + numberOfPieces);
+        stdout('      Storing ' + (i + 1) + '/' + numberOfPieces);
         collectionOut.insert(piece);
     };
     stdout('      Done');
@@ -383,8 +466,8 @@ function coilStreets(data, callback) {
     console.log();
     console.log();
     console.log('   6. Saving Svg');
-    var wstream2 = fs.createWriteStream(saveAs + '.svg');
-    var svgWidth = widthInPixels + 40;
+    var wstream2 = fs.createWriteStream(saveAs);
+    var svgWidth = widthInPixels + 20;
     var svgHeight = coilHeightInPixels + 40;
     var svgPieces = coil.generateSvgPieces(coiledStreets, meterPerPixel, svgWidth, strokeColor, strokeWidth);
     var numberOfSvgPieces = svgPieces.length;
@@ -395,4 +478,27 @@ function coilStreets(data, callback) {
     wstream2.end();
     stdout('      Done');
     callback();
+}
+
+function saveStats(lengthInM, entireArea, coilHeightInPixels) {
+    var output = '';
+    output += '"' + mobilityType[collectionNameIn] + '": {\n';
+    output += '    "area": ' + Math.round(entireArea*100)/100 + ',\n';
+    output += '    "length": ' + Math.round(lengthInM)/100 + ',\n';
+    output += '    "svgHeight": ' + Math.round(coilHeightInPixels)/100 + '\n';
+    output += '}';
+    var fileName = 'stats_' + collectionNameIn + '.js';
+    var saveAs = path.join(__dirname, 'export', getCityName(), fileName);
+    fs.writeFile(saveAs, output, function(err) {
+        if (err) {
+            return console.log(err);
+        }
+    });
+}
+
+function getCityName() {
+    var pathPieces = mongodbIn.split('/');
+    var cityName = pathPieces[pathPieces.length - 1];
+    cityName = cityName.replace('_derived', '');
+    return cityName;
 }
