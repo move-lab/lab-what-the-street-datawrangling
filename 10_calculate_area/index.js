@@ -335,10 +335,22 @@ function getNumberOfLanes(way) {
             // Get number of lanes (in both ways)
             if (way.properties.lanes.lanes) {
                 if (isNaN(way.properties.lanes.lanes)) {
-                    // This should never happen
-                    console.log("Lane information is NaN", way);
-                    //process.exit();
-                    lanes = null;
+
+                    if (way.properties.lanes.lanes.includes(';')) {
+                        // e.g. http://www.openstreetmap.org/way/151983704
+                        var temp = way.properties.lanes.lanes.replace(' ', '');
+                        var temparr = temp.split(';');
+                        for (var i = 0; i < temparr.length; i++) {
+                            temparr[i] = Number(temparr[i]);
+                        }
+                        lanes = sumArrayValues(temparr);
+                        //console.log("Lane information is weird", 'lanes ' + lanes, way);
+                    } else {
+                        // This should never happen
+                        console.log("Lane information is NaN", way);
+                        //process.exit();
+                        lanes = null;
+                    }
                 } else {
                     // Read number of lanes
                     lanes = Number(way.properties.lanes.lanes);
@@ -391,7 +403,7 @@ function getNumberOfLanes(way) {
                 } else if (way.properties.oneway.oneway == -1) {
                     // See http://wiki.openstreetmap.org/wiki/Key:oneway#Normal_use
                     oneway = true;
-                }else if (way.properties.oneway.oneway == 'reversible') {
+                } else if (way.properties.oneway.oneway == 'reversible') {
                     // See https://wiki.openstreetmap.org/wiki/Tag:oneway%3Dreversible - e.g. 27264847
                     oneway = true;
                 } else {
@@ -414,6 +426,11 @@ function getNumberOfLanes(way) {
     }
 }
 
+
+function sumArrayValues(a) {
+    return a.reduce(function(a, b) {
+        return a + b; }, 0);
+}
 
 
 // Helpers
@@ -494,9 +511,9 @@ function addFallbacksToMissingOccurences(occurences) {
     return occurences;
 }
 
-function getCityName(){
+function getCityName() {
     var pathPieces = argv.mongodb.split('/');
-    var cityName = pathPieces[pathPieces.length-1];
+    var cityName = pathPieces[pathPieces.length - 1];
     cityName = cityName.replace('_derived', '');
     return cityName;
 }
