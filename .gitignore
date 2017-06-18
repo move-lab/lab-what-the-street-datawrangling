@@ -13,8 +13,10 @@ _playground/calculate-street-area/node_modules
 09_add_parking_space_size/data
 
 10_calculate_area/node_modules
+10_calculate_area/export/*.txt
 
 11_add_area/node_modules
+11_add_area/export/*.html
 
 12_generate_coils/data
 12_generate_coils/export/*
@@ -31,3 +33,6 @@ datapreparation/citydata
 
 lib/parse-osm-units/node_modules
 lib/node_modules
+
+citydata/*.txt
+logs/*.txt
