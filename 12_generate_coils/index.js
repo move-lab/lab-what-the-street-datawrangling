@@ -117,7 +117,7 @@ function main() {
         widthInPixels -= strokeWidth; //so all coils are the same width regardless of thickness
 
         meterPerPixel = argv.meterPerPixel || defaultMeterPerPixel;
-        widthInMeter = meterPerPixel*widthInPixels;
+        widthInMeter = meterPerPixel * widthInPixels;
 
         gapPercentage = argv.gap || defaultGapPercentage;
         gap = calculateGap();
@@ -189,7 +189,7 @@ function main() {
     }
 }
 
-function calculateGap(){
+function calculateGap() {
     return (widthInMeter * gapPercentage + strokeWidth * meterPerPixel * 1.2) / 1000;
 }
 
@@ -352,10 +352,10 @@ function coilStreets(data, callback) {
     var numberOfStreets = streets.length;
     coil.setProperties(widthInMeter, 5);
 
-    var numberOfHorizontalLines = lengthInM/widthInMeter;
+    var numberOfHorizontalLines = lengthInM / widthInMeter;
 
     if (adaptiveStroke) {
-        strokeWidth = coilHeightInPixels/numberOfHorizontalLines - 2;
+        strokeWidth = coilHeightInPixels / numberOfHorizontalLines - 2;
         gap = calculateGap();
     };
     //console.log(numberOfHorizontalLines);
@@ -371,7 +371,7 @@ function coilStreets(data, callback) {
         var street = streets[i];
 
         var vectorStreet = unfold.getStreetWithVectors(street);
-        var vectorStreetDivided = unfold.subdivideVectorStreet(vectorStreet, 1);
+        var vectorStreetDivided = unfold.subdivideVectorStreet(vectorStreet, 2);
         var coiledStreet = coil.getCoiledStreet(vectorStreetDivided, positionOnCoilCounter, damping, 5);
         //console.log(vectorStreetDivided);
         // for (var i = 0; i < vectorStreetDivided.vectors.length; i++) {
@@ -458,7 +458,12 @@ function coilStreets(data, callback) {
     for (var i = 0; i < numberOfPieces; i++) {
         var piece = jsonToSave[i];
         stdout('      Storing ' + (i + 1) + '/' + numberOfPieces);
-        collectionOut.insert(piece);
+        collectionOut.insert(piece, function(err, records) {
+            if (err) {
+                var exportFailAs = path.join(__dirname, 'export', getCityName(), 'insertionFailed_' + collectionNameIn + '_' + piece._id + '.json');
+                fs.writeFileSync(exportFailAs, JSON.stringify(piece, null, 4));
+            };
+        });
     };
     stdout('      Done');
 
@@ -483,9 +488,9 @@ function coilStreets(data, callback) {
 function saveStats(lengthInM, entireArea, coilHeightInPixels) {
     var output = '';
     output += '"' + mobilityType[collectionNameIn] + '": {\n';
-    output += '    "area": ' + Math.round(entireArea*100)/100 + ',\n';
-    output += '    "length": ' + Math.round(lengthInM)/100 + ',\n';
-    output += '    "svgHeight": ' + Math.round(coilHeightInPixels)/100 + '\n';
+    output += '    "area": ' + Math.round(entireArea * 100) / 100 + ',\n';
+    output += '    "length": ' + Math.round(lengthInM) / 100 + ',\n';
+    output += '    "svgHeight": ' + Math.round(coilHeightInPixels) / 100 + '\n';
     output += '}';
     var fileName = 'stats_' + collectionNameIn + '.js';
     var saveAs = path.join(__dirname, 'export', getCityName(), fileName);
