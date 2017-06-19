@@ -4,9 +4,9 @@ var path = require('path');
 var argv = require('minimist')(process.argv.slice(2));
 var async = require('async');
 var mongodb = require('mongodb');
-require('../lib/helpers.js');
-require('../lib/coil.js');
-require('../lib/unfold.js');
+require('./lib/helpers.js');
+require('./lib/coil.js');
+require('./lib/unfold.js');
 
 var MongoClient = mongodb.MongoClient;
 
