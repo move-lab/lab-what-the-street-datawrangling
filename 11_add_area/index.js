@@ -1,4 +1,5 @@
 var fs = require('fs');
+var path = require('path');
 var argv = require('minimist')(process.argv.slice(2));
 var async = require('async');
 var mongodb = require('mongodb');
@@ -24,7 +25,7 @@ function main() {
         console.log();
         console.log('   1. Iterating over Collection');
         fileName = getCityName() + '_' + collectionName + '.html';
-        fs.writeFileSync(fileName, getHtmlStart());
+        fs.writeFileSync( path.join(__dirname, 'export', fileName), getHtmlStart());
         fs.appendFileSync(fileName, '<h1>' + getCityName() + ': ' + collectionName + '</h1');
         fs.appendFileSync(fileName, '<table>');
 
@@ -103,7 +104,7 @@ function iterate(mongoUrl) {
                     //var urlName = doc.tags.name || ('id:' + doc._id);
                     var urlName = doc.tags.name;
                     if (urlName === '') {
-                        urlName = doc._id;
+                        urlName = String(doc._id);
                     }
                     var averageWidth = doc.tags.area / doc.tags.length;
                     var currentLetter = urlName.charAt(0);

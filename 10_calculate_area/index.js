@@ -507,7 +507,7 @@ function addFallbacksToMissingOccurences(occurences) {
     }
     console.log(log);
 
-    fs.writeFileSync('log_' + getCityName() + '.txt', log);
+    fs.writeFileSync( path.join(__dirname, 'export', 'log_' + getCityName() + '.txt'), log);
     return occurences;
 }
 
