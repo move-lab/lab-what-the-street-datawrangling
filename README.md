@@ -1,38 +1,51 @@
-# What the Street
+# The Mobility Space Report: What the Street!?
+**Part 1: Data Wrangling**
+
+![screen shot 2017-06-27 at 19 11 42](https://user-images.githubusercontent.com/533590/27597962-b001f55c-5b6c-11e7-97e4-d3fef2033637.png)
+
+[*What the Street!?*](http://whatthestreet.moovellab.com/) was derived out of the question “How do new and old mobility concepts change our cities?”. It was raised by [Michael Szell](http://lab.moovel.com/people/michael-szell) and [Stephan Bogner](http://lab.moovel.com/people/stephan-bogner) during their residency at [moovel lab](http://lab.moovel.com/). With support of the lab team they set out to wrangle data of cities around the world to develop and design this unique *Mobility Space Report*.
+
+*What the Street!?* was made out of open-source software and resources. Thanks to the OpenStreetMap contributors and many other pieces we put together the puzzle of urban mobility space seen above.
+
+Implemented project URL: [http://whatthestreet.moovellab.com/](http://whatthestreet.moovellab.com/)
+
+Read more about the technical details behind *The Mobility Space Report: What the Street!?* on our blog: [http://lab.moovel.com/blog/about-what-the-street](http://lab.moovel.com/blog/about-what-the-street)
+
+[Demo Video](https://www.youtube.com/watch?v=QxRr3CSfp8E)
+
+## Codebase
+The complete codebase consist of two independent parts:
+
+1. Data Wrangling
+2. Front & Backend
+
+This is part 1. It wrangles the OpenStreetMap data and creates the SVG files underlying the visuals of *What the Street!?*.
+
+You can find part 2 here: TODO URL
+
 ## Table of Contents
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-- [About](#about)
+
+
+- [Note about code quality](#note-about-code-quality)
 - [Inital setup](#inital-setup)
 - [Adding a city](#adding-a-city)
   - [Process OSM data](#process-osm-data)
-    - [1. Create geo files](#1-create-geo-files)
-    - [2. Load into MongoDB](#2-load-into-mongodb)
-    - [3. Street names](#3-street-names)
-    - [4. Generate streets](#4-generate-streets)
-  - [Generate Parking Spots](#generate-parking-spots)
-    - [1. Create svgs](#1-create-svgs)
-    - [2. Add neighborhood information to SVG/mongoDB](#2-add-neighborhood-information-to-svgmongodb)
-    - [3. Add parking space size information to SVG](#3-add-parking-space-size-information-to-SVG)
-  - [Calculate Area for Streets/Rails](#calculate-area-for-streetsrails)
-    - [1. Calculate Area](#1-calculate-area)
-    - [2. Add Area](#2-add-area)
-  - [Find Landmark](#find-landmark)
-    - [0. Finding a landmark](#0-finding-a-landmark)
-    - [1. Tracing](#1-tracing)
-    - [2. Area Size Information](#2-area-size-information)
-    - [3. Convert to svg](#3-convert-to-svg)
-    - [4. Edit in Sketch](#4-edit-in-sketch)
-  - [Update Citymetadata.json](#update-citymetadatajson)
-  - [Generate Street Coils](#generate-street-coils)
+  - [Generate parking spots](#generate-parking-spots)
+  - [Calculate area for streets/rails](#calculate-area-for-streetsrails)
+  - [Set up landmark](#set-up-landmark)
+  - [Update citymetadata.json](#update-citymetadatajson)
+  - [Generate street coils](#generate-street-coils)
 - [Team](#team)
-- [Acknowledgement](#acknowledgement)
-- [License](#license)
+- [Acknowledgements](#acknowledgements)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## About
-This repository shows how to preparate data and create the visuals which were used in the project 'What the Street' by [moovel lab](http://lab.moovel.com/).
+
+## Note about code quality
+
+The code in this repository was produced for the specific use case of wrangling data for *What the Street!?*. Since this is not live production code, but code to pre-process data, we did *not* apply strict best practices of software development. The code grew organically together with various deadlines and requirements that came from front & backend develoment on the way. Nevertheless, we commented and documented as well as possible to make the process reproducible.
 
 ## Inital setup
 - Get [NodeJS][13]
@@ -61,8 +74,8 @@ out skel;`
 - Download and unpack osm.bz2 file that contains the city from [geofabrik][6], e.g berlin-latest
 - Crop osm file according the boundary using osmconvert `./osmconvert berlin-latest.osm -B=berlin_boundary.poly --drop-broken-refs -o=berlin_cropped.osm`
 
-#### 2. Load into MongoDB
-1. Load osm data into MongoDB via mongosm `node mongosm.js --max_old_space_size=8192 -db berlin_raw -f berlin_cropped.osm` (don't forget to run `npm install` before running the script the first time to install dependencies)
+#### 2. Load into mongoDB
+1. Load osm data into mongoDB via mongosm `node mongosm.js --max_old_space_size=8192 -db berlin_raw -f berlin_cropped.osm` (don't forget to run `npm install` before running the script the first time to install dependencies)
 2. Set cityname parameter (in Jupyter notebook) and execute `01_generategeometries.ipynb`
 
 #### 3. Street names
@@ -71,23 +84,23 @@ out skel;`
 1. Use osmfilter to create a temporary osm file containing only the relevant streets (to derive names from) `./osmfilter berlin_cropped.osm --keep="highway=residential =primary =secondary =tertiary =unclassified" --drop="public_transport=stop_position public_transport=platform public_transport man_made boundary leisure amenity highway=traffic_signals =motorway_junction =bus_stop railway building entrance=yes barrier=gate barrier shop" > temp.osm`
 - Extract names and export as csv `./osmconvert temp.osm --all-to-nodes --csv="name" > temp.csv`
 - Sort alphabetically and discard duplicates `sort -u temp.csv > citydata/berlin_streetnames.txt`
-- **Important:** Check manually and delete obvious errors. 
+- Check manually and delete obvious errors. 
 - Sort by length of string `cat citydata/berlin_streetnames.txt | awk '{ print length, $0 }' | sort -n -s | cut -d" " -f2- > citydata/berlin_streetnames_bylength.txt`
-- **Important:** Check again manually for obvious errors
+- Check again manually for obvious errors.
 
 #### 4. Generate streets
 1. Set cityname parameter (in Jupyter notebook) and execute `02_unwindbike.ipynb`
 - Set cityname parameter (in Jupyter notebook) and execute `03_unwindrail.ipynb`
 - Set cityname parameter (in Jupyter notebook) and execute `04_unwindstreet.ipynb`
 
-### Generate Parking Spots
+### Generate parking spots
 
-#### 1. Create svgs
+#### 1. Create SVGs
 1. Serve SVGnest-batch locally (e.g. `python3 -m http.server` or `python -m SimpleHTTPServer 8000`)
 - Set cityname parameter and execute `05_parkingtosvgbike.ipynb` **step by step**. 
 	- This involves executing SVGnest-batch inbetween!
 	- **If SVGNest fails** → execute `06_parkingtosvgbikealt.ipynb` instead! 
-	- In the end an SVG (all.svg) like following is created:  
+	- In the end an SVG (all.svg) like the following is created:  
 ![SVG of bike parking spots](_assets/bikeparkingexample.png "SVG of car parking spots")
 
 - Set cityname parameter and execute `07_parkingtosvgcar.ipynb` **step by step**. 
@@ -101,59 +114,88 @@ Open `08_add_neighborhoods` and run `node index.js` to get instructions
 #### 3. Add parking space size information to SVG
 Open `09_add_parking_space_size` and run `node index.js` to get instructions
 
-### Calculate Area for Streets/Rails
+### Calculate area for streets/rails
 This adds size information to the mongoDB
 
-#### 1. Calculate Area
+#### 1. Calculate area
 Open `10_calculate_area` and run `node index.js` to get instructions
 
-#### 2. Add Area
+#### 2. Add area
 Open `11_add_area` and run `node index.js` to get instructions
 
 **Note:** Don't forget to write the results into the citymetadata.json
 
-### Find Landmark
+### Set up landmark
 #### 0. Finding a landmark
 Search for a proper landmark in the city (around the size of Central Park in NY or Mt. Tabor in Portland)
 
 #### 1. Tracing
-I traced the outlines [geojson.io](http://geojson.io/), but any tool should be fine which produces .geojson
+The outlines can be traced via [geojson.io](http://geojson.io/), but any tool should be fine which produces a .geojson
 
-#### 2. Area Size Information
+#### 2. Area size information
 1. Import geojson to geojson.io
 2. Click on shape
 3. Select info
 4. Extract m² information and update citymetadata.json
 
-#### 3. Convert to svg
+#### 3. Convert to SVG
 1. Install the plugin [SimpleSVG](https://plugins.qgis.org/plugins/simplesvg/) for QGIS
 2. Open the geojson and from 'Tab', select save as svg
 3. Save both, svg and geojson to GDrive
 
-#### 4. Edit in Sketch
+#### 4. Edit in sketch
 1. Import svgs
 2. Scale by 45% (but also import an landmark that is already in sketch to verify if this is correct)
 3. Style like other Landmarks
 4. Simplify shape if necessary
-5. Flatten Text
+5. Flatten text
 6. Export as svg
 
-### Update Citymetadata.json
+### Update citymetadata.json
 Add city information to `_data/citymetadata.json`
 **Note:** See template for structure
 
-### Generate Street Coils
+### Generate street coils
 Open `12_generate_coils` and run `node index.js` to get instructions
 **Note:** Running this script will result in large file sizes
 
 ## Team
-- **Concept:** Michael Szell ([website](http://michael.szell.net/), [@mszll](https://twitter.com/mszll)) & Stephan Bogner
 
-## Acknowledgement
+#### Concept and Coding
+- [Michael Szell](http://lab.moovel.com/people/michael-szell)
+- [Stephan Bogner](http://lab.moovel.com/people/stephan-bogner)
+
+#### Direction
+[Benedikt Groß](http://lab.moovel.com/people/benedikt-gross)
+
+#### Website Front & Backend Engineering
+[Thibault Durand](http://thibault-durand.fr/)
+
+#### Website Implementation Assistant
+Tobias Lauer
+
+#### Visual Design
+[Anagrama](https://www.anagrama.ro/)
+
+#### Extended Team
+
+- [Raphael Reimann](http://lab.moovel.com/people/raphael-reimann)
+- [Joey Lee](http://lab.moovel.com/people/joey-lee)
+- [Daniel Schmid](http://lab.moovel.com/people/daniel-schmid)
+- [Tilman Häuser](http://lab.moovel.com/people/tilman-haeuser)
+
+#### City Data Wrangling Assistant
+[Johannes Wachs](http://johanneswachs.com/)
+
+#### Data Sources
+OpenStreetMap, a free alternative to services like Google Maps. Please contribute, if you notice poor data quality.
+
+[https://donate.openstreetmap.org/](https://donate.openstreetmap.org/)
+
+## Acknowledgements
 - Parking space packing using [SVGnest](http://svgnest.com/) by [Jack Qiao](https://github.com/Jack000)
+- Street chopping using [osmnx](https://github.com/gboeing/osmnx) by [Geoff Boeing](https://github.com/gboeing)
 
-## License
-[TBD]
 
 [1]: https://www.continuum.io/downloads
 [2]: http://www.qgis.org/

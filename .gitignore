@@ -40,3 +40,6 @@ lib/node_modules
 
 citydata/*.txt
 logs/*.txt
+
+output/*
+.ipynb_checkpoints/*
