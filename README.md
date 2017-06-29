@@ -45,7 +45,7 @@ You can find part 2 here: TODO URL
 
 ## Note about code quality
 
-The code in this repository was produced for the specific use case of wrangling data for *What the Street!?*. Since this is not live production code, but code to pre-process data, we did *not* apply strict best practices of software development. The code grew organically together with various deadlines and requirements that came from front & backend develoment on the way. Nevertheless, we commented and documented as well as possible to make the process reproducible.
+The code in this repository was produced for the specific use case of wrangling data for *What the Street!?*. Since this is not live production code, but code to pre-process data, we did *not* strictly apply best practices of software development. The code grew organically together with various deadlines and requirements that came from front & backend develoment on the way. Nevertheless, we commented and documented as well as possible to make the process reproducible.
 
 ## Inital setup
 - Get [NodeJS][13]
