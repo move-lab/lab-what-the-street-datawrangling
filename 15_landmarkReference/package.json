@@ -1,0 +1,14 @@
+{
+  "name": "generate-reference",
+  "version": "1.0.0",
+  "description": "Creates a square the size of the space driving cars in a city take up",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Stephan Bogner <hello@stephanbogner.de>",
+  "license": "ISC",
+  "dependencies": {
+    "turf": "^3.0.14"
+  }
+}

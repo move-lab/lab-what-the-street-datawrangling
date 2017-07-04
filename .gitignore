@@ -24,6 +24,9 @@ _playground/calculate-street-area/node_modules
 
 13_get_information/node_modules
 
+15_landmarkReference/export/*
+15_landmarkReference/node_modules
+
 generate_image_sequences/node_modules
 generate_image_sequences/export/
 
