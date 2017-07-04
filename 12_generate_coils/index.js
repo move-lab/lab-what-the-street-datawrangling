@@ -4,9 +4,9 @@ var path = require('path');
 var argv = require('minimist')(process.argv.slice(2));
 var async = require('async');
 var mongodb = require('mongodb');
-require('./lib/helpers.js');
-require('./lib/coil.js');
-require('./lib/unfold.js');
+require('../lib/helpers.js');
+require('../lib/coil.js');
+require('../lib/unfold.js');
 
 var MongoClient = mongodb.MongoClient;
 
@@ -83,110 +83,280 @@ var mobilityType = {
 var counter = 0;
 var numberOfFiles;
 
-var jsonToSave = [];
 var pretty;
 
-main();
-
-function main() {
-    printInstructions();
-
-    if (argv.parkingSvgHeight && argv.parkingArea && (argv.mongodb || (argv.mongodbIn && argv.mongodbOut)) && argv.collection) {
-        // Use car svg as reference
-        mongodbIn = argv.mongodbIn || argv.mongodb;
-
-        if (argv.mongodbOut) {
-            mongodbOut = argv.mongodbOut;
-        } else {
-            mongodbOut = (argv.mongodb).replace('_derived', '_coiled') || (argv.mongodbIn).replace('_derived', '_coiled');
+var cityData = {
+    "berlin": {
+        "meterPerPixel": 1.01,
+        "parkingSvgHeight": 20584,
+        "parkingArea": 8156098.06
+    },
+    "newyork": {
+        "meterPerPixel": 1.27,
+        "parkingSvgHeight": 9758,
+        "parkingArea": 6438190.23,
+        "scale": {
+            "car-tracks": 0.8
         }
-
-        adaptSize = argv.adaptSize || adaptSizeDefault;
-
-        alternatingStrokeColor = argv.alternatingStrokeColor || false;
-        collectionNameIn = argv.collectionIn || argv.collection;
-        collectionNameOut = argv.collectionOut || argv.collection || collectionNameIn;
-
-        strokeWidth = argv.strokeWidth || strokeWidthDefault[collectionNameIn];
-        strokeColor = argv.strokeColor || strokeColorDefault;
-
-        parkingSvgHeight = argv.parkingSvgHeight;
-        parkingArea = argv.parkingArea;
-
-        widthInPixels = argv.widthInPixels || defaultWidthInPixels;
-        widthInPixels -= strokeWidth; //so all coils are the same width regardless of thickness
-
-        meterPerPixel = argv.meterPerPixel || defaultMeterPerPixel;
-        widthInMeter = meterPerPixel * widthInPixels;
-
-        gapPercentage = argv.gap || defaultGapPercentage;
-        gap = calculateGap();
-        limit = argv.limit || defaultLimit;
-        onStreetParkingSpots = argv.parkingSpots || onStreetParkingSpotsDefault;
-
-        pretty = argv.pretty || true;
-
-        damping = argv.damping || dampingDefault[collectionNameIn];
-        damping = Number(damping);
-
-        if (isNaN(damping)) {
-            throw 'please only specify one damping value and use a number'
+    },
+    "amsterdam": {
+        "meterPerPixel": 1.02,
+        "parkingSvgHeight": 3715,
+        "parkingArea": 1554865.52
+    },
+    "stuttgart": {
+        "meterPerPixel": 1.1,
+        "parkingSvgHeight": 3600,
+        "parkingArea": 2071356.74
+    },
+    "portland": {
+        "meterPerPixel": 1.17,
+        "parkingSvgHeight": 6016,
+        "parkingArea": 3256151.8,
+        "scale": {
+            "bike-tracks": 0.5,
         }
-
-        saveSettings();
-
-        printProgressStart();
-
-        console.log();
-        console.log('   1. Connect to mongoDB for importing');
-        stdout('      Connecting');
-        MongoClient.connect(mongodbIn, function(err, dbIn) {
-            if (err) {
-                console.log('Unable to connect to ' + mongodbIn + '. Error:', err);
-            } else {
-                stdout('      Done');
-
-                console.log();
-                console.log();
-                console.log('   2. Connect to mongoDB for exporting');
-                stdout('      Connecting');
-                MongoClient.connect(mongodbOut, function(err, dbOutTemp) {
-                    dbOut = dbOutTemp;
-                    if (err) {
-                        console.log('Unable to connect to ' + mongodbOut + '. Error:', err);
-                    } else {
-                        stdout('      Done');
-                        var collectionIn = dbIn.collection(collectionNameIn);
-                        collectionIn.find({}).toArray(function(err, docs) {
-                            if (err) {
-                                console.log('ERR', err);
-                            } else {
-                                numberOfAllStreets = docs.length;
-                                if (limit !== null) {
-                                    onStreetParkingSpots = onStreetParkingSpots * limit / numberOfAllStreets;
-                                }
-                                onStreetParking = onStreetParkingSpots * sizePerParkingSpot;
-                                additionalSpacePerStreet = onStreetParking / numberOfAllStreets;
-                                async.detectSeries([docs], coilStreets, function(err, result) {
-                                    console.log();
-                                    console.log('   Waiting for db to finish ... ');
-                                    setTimeout(function() {
-                                        dbIn.close();
-                                        dbOut.close();
-
-                                        printSummary();
-                                    }, 20000)
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    } else {
-        console.log();
-        console.log('Please specify all required parameters');
+    },
+    "losangeles": {
+        "meterPerPixel": 1.38,
+        "parkingSvgHeight": 14180,
+        "parkingArea": 10718240.39
+    },
+    "sanfrancisco": {
+        "meterPerPixel": 1.36,
+        "parkingSvgHeight": 2546,
+        "parkingArea": 1644303.24,
+        "scale": {
+            "car-tracks": 0.7,
+            "bike-tracks": 0.7
+        }
+    },
+    "boston": {
+        "meterPerPixel": 1.23,
+        "parkingSvgHeight": 1695,
+        "parkingArea": 1016707.35,
+        "scale": {
+            "car-tracks": 0.5
+        }
+    },
+    "vienna": {
+        "meterPerPixel": 1.11,
+        "parkingSvgHeight": 6987,
+        "parkingArea": 3246050.9,
+        "scale": {
+            "bike-tracks": 0.8
+        }
+    },
+    "copenhagen": {
+        "meterPerPixel": 0.94,
+        "parkingSvgHeight": 3959,
+        "parkingArea": 1300246.11,
+        "scale": {
+            "car-tracks": 0.5
+        }
+    },
+    "barcelona": {
+        "meterPerPixel": 1.25,
+        "parkingSvgHeight": 1371,
+        "parkingArea": 848626.92
+    },
+    "beijing": {
+        "meterPerPixel": 1.28,
+        "parkingSvgHeight": 3207,
+        "parkingArea": 2177509.53
+    },
+    "budapest": {
+        "meterPerPixel": 1.13,
+        "parkingSvgHeight": 6693,
+        "parkingArea": 3289634.03
+    },
+    "chicago": {
+        "meterPerPixel": 1.24,
+        "parkingSvgHeight": 23527,
+        "parkingArea": 14619593.73,
+        "scale": {
+            "bike-tracks": 0.5
+        }
+    },
+    "helsinki": {
+        "meterPerPixel": 0.83,
+        "parkingSvgHeight": 9326,
+        "parkingArea": 2427001.99,
+        "scale": {
+            "car-tracks": 0.9,
+            "bike-tracks": 0.9
+        }
+    },
+    "hongkong": {
+        "meterPerPixel": 1.41,
+        "parkingSvgHeight": 1992,
+        "parkingArea": 1793753.56
+    },
+    "jakarta": {
+        "meterPerPixel": 1.66,
+        "parkingSvgHeight": 4487,
+        "parkingArea": 1366919.62,
+        "scale": {
+            "car-tracks": 0.8,
+            "rail-tracks": 0.8,
+            "rail-parking": 0.8,
+            "bike-tracks": 0.6
+        }
+    },
+    "johannesburg": {
+        "meterPerPixel": 1.5,
+        "parkingSvgHeight": 4487,
+        "parkingArea": 3749097.91
+    },
+    "london": {
+        "meterPerPixel": 1.04,
+        "parkingSvgHeight": 25822,
+        "parkingArea": 11001870.06
+    },
+    "moscow": {
+        "meterPerPixel": 0.94,
+        "parkingSvgHeight": 26866,
+        "parkingArea": 9554779.18,
+        "scale": {
+            "car-tracks": 0.8
+        }
+    },
+    "rome": {
+        "meterPerPixel": 1.24,
+        "parkingSvgHeight": 8655,
+        "parkingArea": 5068537.63
+    },
+    "singapore": {
+        "meterPerPixel": 1.67,
+        "parkingSvgHeight": 4174,
+        "parkingArea": 4227709.77
+    },
+    "tokyo": {
+        "meterPerPixel": 1.36,
+        "parkingSvgHeight": 9200,
+        "parkingArea": 5951035.54
     }
+}
+
+var cities;
+var citiesDefault = Object.keys(cityData);
+
+cities = argv.cities || citiesDefault;
+if (argv.cities) {
+    cities = cities.split(',');
+};
+
+async.eachSeries(cities, function(automaticCityName, callback) {
+    async.mapSeries(['biketracks', 'railtracks', 'railtracksparking', 'streets'],
+        function(collName, callback) {
+            console.log(automaticCityName, collName);
+            main(automaticCityName, collName, callback)
+        },
+        function(err) {
+            console.log(automaticCityName + ' complete');
+            callback();
+        }
+    );
+});
+
+function main(automaticCityName, automaticCollection, callback) {
+    console.log();
+    console.log();
+    console.log('Coiling ' + automaticCityName + ' (' + automaticCollection + ')')
+
+    // Use car svg as reference
+    mongodbIn = 'mongodb://127.0.0.1:27017/' + automaticCityName + '_derived';
+
+    if (argv.mongodbOut) {
+        mongodbOut = argv.mongodbOut;
+    } else {
+        mongodbOut = mongodbIn.replace('_derived', '_coiled') || (argv.mongodbIn).replace('_derived', '_coiled');
+    }
+
+    adaptSize = adaptSizeDefault;
+    var mobilityName = fileNameLUT[automaticCollection];
+    if (cityData[automaticCityName].scale && cityData[automaticCityName].scale[mobilityName]) {
+        adaptSize = cityData[automaticCityName].scale[mobilityName];
+        console.log('Scaling about ' + adaptSize);
+    };
+
+    alternatingStrokeColor = argv.alternatingStrokeColor || false;
+    collectionNameIn = automaticCollection;
+    collectionNameOut = argv.collectionOut || argv.collection || collectionNameIn;
+
+    strokeWidth = argv.strokeWidth || strokeWidthDefault[collectionNameIn];
+    strokeColor = argv.strokeColor || strokeColorDefault;
+
+    parkingSvgHeight = cityData[automaticCityName].parkingSvgHeight;
+    parkingArea = cityData[automaticCityName].parkingArea;
+
+    widthInPixels = argv.widthInPixels || defaultWidthInPixels;
+    widthInPixels -= strokeWidth; //so all coils are the same width regardless of thickness
+
+    meterPerPixel = cityData[automaticCityName].meterPerPixel;
+    widthInMeter = meterPerPixel * widthInPixels;
+
+    gapPercentage = argv.gap || defaultGapPercentage;
+    gap = calculateGap();
+    limit = argv.limit || defaultLimit;
+    onStreetParkingSpots = argv.parkingSpots || onStreetParkingSpotsDefault;
+
+    pretty = argv.pretty || true;
+
+    damping = argv.damping || dampingDefault[collectionNameIn];
+    damping = Number(damping);
+
+    if (isNaN(damping)) {
+        throw 'please only specify one damping value and use a number'
+    }
+
+    saveSettings();
+
+    console.log();
+    console.log('   1. Connect to mongoDB for importing');
+    stdout('      Connecting');
+    MongoClient.connect(mongodbIn, function(err, dbIn) {
+        if (err) {
+            console.log('Unable to connect to ' + mongodbIn + '. Error:', err);
+        } else {
+            stdout('      Done');
+
+            console.log();
+            console.log();
+            console.log('   2. Connect to mongoDB for exporting');
+            stdout('      Connecting');
+            MongoClient.connect(mongodbOut, function(err, dbOutTemp) {
+                dbOut = dbOutTemp;
+                //dbOut.collection(automaticCollection).drop(function() {
+                if (err) {
+                    console.log('Unable to connect to ' + mongodbOut + '. Error:', err);
+                } else {
+                    stdout('      Done');
+                    var collectionIn = dbIn.collection(collectionNameIn);
+                    collectionIn.find({}).toArray(function(err, docs) {
+                        if (err) {
+                            console.log('ERR', err);
+                        } else {
+                            numberOfAllStreets = docs.length;
+                            if (limit !== null) {
+                                onStreetParkingSpots = onStreetParkingSpots * limit / numberOfAllStreets;
+                            }
+                            onStreetParking = onStreetParkingSpots * sizePerParkingSpot;
+                            additionalSpacePerStreet = onStreetParking / numberOfAllStreets;
+                            async.detectSeries([docs], coilStreets, function(err, result) {
+                                dbIn.close();
+                                dbOut.close();
+
+                                printSummary();
+                                setImmediate(callback);
+                            });
+                        }
+                    });
+                }
+                //});
+            });
+        }
+    });
 }
 
 function calculateGap() {
@@ -285,12 +455,10 @@ function printInstructions() {
     console.log('--------------');
     console.log('');
     console.log('   Example:');
-    console.log('     node --max_old_space_size=8192 index.js --parkingSvgHeight 20584 --parkingArea 8156098.06 --mongodb mongodb://127.0.0.1:27017/berlin_derived --collection streets --meterPerPixel 1.2672955975');
+    console.log('     node --max_old_space_size=8192 index.js --cities johannesburg,boston');
     console.log();
-    console.log('   Note: There are many settings to define the coil, but what you have to do essentially is:');
-    console.log('      1. Open the readme');
-    console.log('      2. Go to "Commands to run"');
-    console.log('      3. Run every command after each other listed there');
+    console.log('    --cities: [Optional] ');
+    console.log();
 }
 
 function stdout(str) {
@@ -311,6 +479,7 @@ function printProgressStart() {
 }
 
 function coilStreets(data, callback) {
+    var jsonToSave = [];
     var streets = data;
 
     // Get Area and length
@@ -346,7 +515,7 @@ function coilStreets(data, callback) {
 
     console.log();
     console.log('   4. Coiling');
-    var coiledStreets = [];
+    //var coiledStreets = [];
     //var vectorStreets = [];
     var positionOnCoilCounter = 0;
     var numberOfStreets = streets.length;
@@ -357,18 +526,18 @@ function coilStreets(data, callback) {
     if (adaptiveStroke) {
         strokeWidth = coilHeightInPixels / numberOfHorizontalLines - 2;
         gap = calculateGap();
-    };
+    }
     //console.log(numberOfHorizontalLines);
 
     var properties = coil.setHeight(coilHeightInPixels, lengthInM, pixelPerMeter);
 
     // Coil
-    for (var i = 0; i < numberOfStreets; i++) {
-        if (i > limit - 1 && limit != null) {
+    for (var streetIndex = 0; streetIndex < numberOfStreets; streetIndex++) {
+        if (streetIndex > limit - 1 && limit != null) {
             break;
         }
 
-        var street = streets[i];
+        var street = streets[streetIndex];
 
         var vectorStreet = unfold.getStreetWithVectors(street);
         var vectorStreetDivided = unfold.subdivideVectorStreet(vectorStreet, 2);
@@ -381,11 +550,21 @@ function coilStreets(data, callback) {
         positionOnCoilCounter += (coiledStreet.coilEnd - coiledStreet.coilStart)
         positionOnCoilCounter += gap;
 
-        coiledStreets.push(coiledStreet);
+        // var coiledStreetToTest = JSON.parse(JSON.stringify(coiledStreet));
+        // var coiledVectorsCompressed = [];
+        // for (var i = 0; i < coiledStreetToTest.vectors.length; i++) {
+        //     var val = coiledStreetToTest.vectors[i];
+        //     var toP = [val.distance, val.deltaAngle];
+        //     coiledVectorsCompressed.push(toP);
+        // };
+        // coiledStreetToTest.vectors = coiledVectorsCompressed;
+        // coiledStreets.push(coiledStreetToTest);
+
         //vectorStreets.push( vectorStreetDivided );
 
         // Remove Redundancy
         var coiledStreetToPush = JSON.parse(JSON.stringify(coiledStreet));
+
         delete coiledStreetToPush.tags;
         delete coiledStreetToPush.length;
         delete coiledStreetToPush['_id'];
@@ -406,12 +585,36 @@ function coilStreets(data, callback) {
 
         coiledStreet.tags.area += additionalSpacePerStreet;
 
-        // Store
+        // Convert object to array to save space
+        var coiledVectorsCompressed = [];
+        for (var i = 0; i < coiledStreetToPush.vectors.length; i++) {
+            var val = coiledStreetToPush.vectors[i];
+            var toP = [val.distance, val.deltaAngle];
+            coiledVectorsCompressed.push(toP);
+        };
+        coiledStreetToPush.vectors = coiledVectorsCompressed;
+
+        var originalVectorsCompressed = [];
+        for (var i = 0; i < vectorStreetDividedToPush.vectors.length; i++) {
+            var val = vectorStreetDividedToPush.vectors[i];
+            var type;
+            if (val.type === 'street') {
+                type = 1;
+            } else {
+                type = 0;
+            }
+            var toP = [val.distance, val.deltaBearing, type, val.originalNumber]
+            originalVectorsCompressed.push(toP);
+        };
+        vectorStreetDividedToPush.vectors = originalVectorsCompressed;
+
+        // For storing and editing
         var toPush = {
             '_id': coiledStreet['_id'],
             'properties': {
                 'length': coiledStreet.tags.length.toFixed(2),
                 'area': coiledStreet.tags.area.toFixed(2),
+                'coilOrigin': coiledStreet.coilOrigin,
                 'origin': coiledStreet.origin
             },
             'coiled': coiledStreetToPush,
@@ -428,9 +631,9 @@ function coilStreets(data, callback) {
 
         jsonToSave.push(toPush);
         if (limit === null) {
-            stdout('      Coiling ' + (i + 1) + '/' + numberOfStreets);
+            stdout('      Coiling ' + (streetIndex + 1) + '/' + numberOfStreets);
         } else {
-            stdout('      Coiling ' + (i + 1) + '/' + limit + ' [Debug Mode]');
+            stdout('      Coiling ' + (streetIndex + 1) + '/' + limit + ' [Debug Mode]');
         }
     }
     stdout('      Done');
@@ -450,39 +653,40 @@ function coilStreets(data, callback) {
     console.log();
     console.log('   5. Adding Data to mongoDB');
 
-    var numberOfPieces = jsonToSave.length;
-
     var collectionOut = dbOut.collection(collectionNameOut);
-    collectionOut.drop();
+    collectionOut.drop(function() {
 
-    for (var i = 0; i < numberOfPieces; i++) {
-        var piece = jsonToSave[i];
-        stdout('      Storing ' + (i + 1) + '/' + numberOfPieces);
-        collectionOut.insert(piece, function(err, records) {
-            if (err) {
-                var exportFailAs = path.join(__dirname, 'export', getCityName(), 'insertionFailed_' + collectionNameIn + '_' + piece._id + '.json');
-                fs.writeFileSync(exportFailAs, JSON.stringify(piece, null, 4));
-            };
+        async.eachSeries(jsonToSave, function(piece, callback) {
+            stdout('      Storing data');
+            collectionOut.save(piece, function(err, records) {
+                if (err !== null) {
+                    //var exportFailAs = path.join(__dirname, 'export', getCityName(), 'insertionFailed_' + collectionNameIn + '_' + piece._id + '.json');
+                    //fs.writeFileSync(exportFailAs, JSON.stringify(piece, null, 4));
+                    console.log('It looks like mongodb crashed when storing id ' + piece._id)
+                }
+                setImmediate(callback);
+            });
+        }, function(err, result) {
+            stdout('      Done');
+
+            // Save svg
+            console.log();
+            console.log();
+            console.log('   6. Saving Svg');
+            var wstream2 = fs.createWriteStream(saveAs);
+            var svgWidth = widthInPixels + 20;
+            var svgHeight = coilHeightInPixels + 40;
+            var svgPieces = coil.generateSvgPieces(jsonToSave, meterPerPixel, svgWidth, strokeColor, strokeWidth);
+            var numberOfSvgPieces = svgPieces.length;
+            for (var i = 0; i < numberOfSvgPieces; i++) {
+                stdout('      Saving Path ' + (i + 1) + '/' + numberOfSvgPieces);
+                wstream2.write(svgPieces[i] + '\n');
+            }
+            wstream2.end();
+            stdout('      Done');
+            callback();
         });
-    };
-    stdout('      Done');
-
-    // Save svg
-    console.log();
-    console.log();
-    console.log('   6. Saving Svg');
-    var wstream2 = fs.createWriteStream(saveAs);
-    var svgWidth = widthInPixels + 20;
-    var svgHeight = coilHeightInPixels + 40;
-    var svgPieces = coil.generateSvgPieces(coiledStreets, meterPerPixel, svgWidth, strokeColor, strokeWidth);
-    var numberOfSvgPieces = svgPieces.length;
-    for (var i = 0; i < numberOfSvgPieces; i++) {
-        stdout('      Saving Path ' + (i + 1) + '/' + numberOfSvgPieces);
-        wstream2.write(svgPieces[i] + '\n');
-    }
-    wstream2.end();
-    stdout('      Done');
-    callback();
+    });
 }
 
 function saveStats(lengthInM, entireArea, coilHeightInPixels) {

@@ -22,10 +22,6 @@ _playground/calculate-street-area/node_modules
 12_generate_coils/export/*
 12_generate_coils/node_modules
 
-12_generate_coils_batch/data
-12_generate_coils_batch/export/*
-12_generate_coils_batch/node_modules
-
 13_get_information/node_modules
 
 generate_image_sequences/node_modules
