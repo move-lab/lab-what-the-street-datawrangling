@@ -32,12 +32,34 @@ You can find part 2 here: TODO URL
 - [Inital setup](#inital-setup)
 - [Adding a city](#adding-a-city)
   - [Process OSM data](#process-osm-data)
+    - [1. Create geo files](#1-create-geo-files)
+    - [2. Load into mongoDB](#2-load-into-mongodb)
+    - [3. Street names](#3-street-names)
+    - [4. Generate streets](#4-generate-streets)
   - [Generate parking spots](#generate-parking-spots)
+    - [1. Create SVGs](#1-create-svgs)
+    - [2. Add neighborhood information to SVG/mongoDB](#2-add-neighborhood-information-to-svgmongodb)
+    - [3. Add parking space size information to SVG](#3-add-parking-space-size-information-to-svg)
   - [Calculate area for streets/rails](#calculate-area-for-streetsrails)
+    - [1. Calculate area](#1-calculate-area)
+    - [2. Add area](#2-add-area)
   - [Set up landmark](#set-up-landmark)
-  - [Update citymetadata.json](#update-citymetadatajson)
+    - [0. Finding a landmark](#0-finding-a-landmark)
+    - [1. Tracing](#1-tracing)
+    - [2. Area size information](#2-area-size-information)
+    - [3. Convert to SVG](#3-convert-to-svg)
+    - [4. Edit in Sketch](#4-edit-in-sketch)
   - [Generate street coils](#generate-street-coils)
+  - [Update citymetadata.json](#update-citymetadatajson)
 - [Team](#team)
+    - [Concept and Coding](#concept-and-coding)
+    - [Direction](#direction)
+    - [Website Front & Backend Engineering](#website-front--backend-engineering)
+    - [Website Implementation Assistant](#website-implementation-assistant)
+    - [Visual Design](#visual-design)
+    - [Extended Team](#extended-team)
+    - [City Data Wrangling Assistant](#city-data-wrangling-assistant)
+    - [Data Sources](#data-sources)
 - [Acknowledgements](#acknowledgements)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -123,14 +145,12 @@ Open `10_calculate_area` and run `node index.js` to get instructions
 #### 2. Add area
 Open `11_add_area` and run `node index.js` to get instructions
 
-**Note:** Don't forget to write the results into the citymetadata.json
-
 ### Set up landmark
 #### 0. Finding a landmark
 Search for a proper landmark in the city (around the size of Central Park in NY or Mt. Tabor in Portland)
 
 #### 1. Tracing
-The outlines can be traced via [geojson.io](http://geojson.io/), but any tool should be fine which produces a .geojson
+The outlines can be traced via [geojson.io](http://geojson.io/), but any tool should be fine which produces a geojson-file. Make sure you trace as a polygon to calculate its size.
 
 #### 2. Area size information
 1. Import geojson to geojson.io
@@ -139,28 +159,29 @@ The outlines can be traced via [geojson.io](http://geojson.io/), but any tool sh
 4. Extract m² information and update citymetadata.json
 
 #### 3. Convert to SVG
-1. Install the plugin [SimpleSVG](https://plugins.qgis.org/plugins/simplesvg/) for QGIS
-2. Open the geojson and from 'Tab', select save as svg
-3. Save both, svg and geojson to GDrive
+1. Run `15_landmarkReference` in order to obtain a reference square (you only have to do this step once)
+2. Merge the geojson of the landmark together with the reference
+3. Install the plugin [SimpleSVG](https://plugins.qgis.org/plugins/simplesvg/) for QGIS
+4. Open the geojson and from 'Tab', select save as svg
+5. Save both, svg and geojson to GDrive
 
-#### 4. Edit in sketch
+#### 4. Edit in Sketch
 1. Import svgs
-2. Scale by 45% (but also import an landmark that is already in sketch to verify if this is correct)
+2. Scale that the reference square equals the width in pixels of the other landmarks reference squares
 3. Style like other Landmarks
 4. Simplify shape if necessary
 5. Flatten text
-6. Export as svg
-
-### Update citymetadata.json
-Add city information to `_data/citymetadata.json`
-**Note:** See template for structure
+6. Export
 
 ### Generate street coils
 Open `12_generate_coils` and run `node index.js` to get instructions
 **Note:** Running this script will result in large file sizes
 
-## Team
+### Update citymetadata.json
+1. Use `13_get_information`
+2. Use `16_getSvgHeights`
 
+## Team
 #### Concept and Coding
 - [Michael Szell](http://lab.moovel.com/people/michael-szell)
 - [Stephan Bogner](http://lab.moovel.com/people/stephan-bogner)
