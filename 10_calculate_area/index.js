@@ -97,7 +97,8 @@ function countWidthOccurences(mongoUrl) {
                     }
 
                     // For bikelanes with width
-                    if (mobilityKind === 'bike' && w) {
+                    if (mobilityKind === 'bike' && w && (way.properties.highway.highway === 'path' || way.properties.highway.highway === 'cycleway')) {
+
                         var l = getLength(way);
                         var a = w * l;
 
@@ -157,7 +158,7 @@ function calculateAreaAndUpdateEntry(perMeterAndLane) {
                     var w = getWidth(way);
                     var l = getLength(way);
 
-                    if (mobilityKind === 'car' || mobilityKind === 'bike') {
+                    if (mobilityKind === 'car') {
                         var a;
                         if (w) {
                             a = l * w;
@@ -166,6 +167,11 @@ function calculateAreaAndUpdateEntry(perMeterAndLane) {
                             var wAverage = perMeterAndLane[mobilityKind][relevantWayType];
                             a = l * wAverage * numberOfLanes;
                         }
+                        a = Number(a.toFixed(3));
+                        output[mobilityKind] = a;
+                    }else if (mobilityKind === 'bike') {
+                        var wAverage = perMeterAndLane[mobilityKind][relevantWayType];
+                        var a = l * wAverage;
                         a = Number(a.toFixed(3));
                         output[mobilityKind] = a;
                     } else if (mobilityKind === 'rail') {
