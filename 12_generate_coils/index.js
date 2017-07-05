@@ -112,10 +112,7 @@ var cityData = {
     "portland": {
         "meterPerPixel": 1.17,
         "parkingSvgHeight": 6016,
-        "parkingArea": 3256151.8,
-        "scale": {
-            "bike-tracks": 0.5,
-        }
+        "parkingArea": 3256151.8
     },
     "losangeles": {
         "meterPerPixel": 1.38,
@@ -183,8 +180,7 @@ var cityData = {
         "parkingSvgHeight": 9326,
         "parkingArea": 2427001.99,
         "scale": {
-            "car-tracks": 0.9,
-            "bike-tracks": 0.9
+            "car-tracks": 0.9
         }
     },
     "hongkong": {
@@ -675,7 +671,7 @@ function coilStreets(data, callback) {
             console.log('   6. Saving Svg');
             var wstream2 = fs.createWriteStream(saveAs);
             var svgWidth = widthInPixels + 20;
-            var svgHeight = coilHeightInPixels + 40;
+            //var svgHeight = coilHeightInPixels + 40;
             var svgPieces = coil.generateSvgPieces(jsonToSave, meterPerPixel, svgWidth, strokeColor, strokeWidth);
             var numberOfSvgPieces = svgPieces.length;
             for (var i = 0; i < numberOfSvgPieces; i++) {
