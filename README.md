@@ -52,14 +52,6 @@ You can find part 2 here: TODO URL
   - [Generate street coils](#generate-street-coils)
   - [Update citymetadata.json](#update-citymetadatajson)
 - [Team](#team)
-    - [Concept and Coding](#concept-and-coding)
-    - [Direction](#direction)
-    - [Website Front & Backend Engineering](#website-front--backend-engineering)
-    - [Website Implementation Assistant](#website-implementation-assistant)
-    - [Visual Design](#visual-design)
-    - [Extended Team](#extended-team)
-    - [City Data Wrangling Assistant](#city-data-wrangling-assistant)
-    - [Data Sources](#data-sources)
 - [Acknowledgements](#acknowledgements)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
