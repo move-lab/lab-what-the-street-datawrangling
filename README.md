@@ -21,7 +21,7 @@ The complete codebase consist of two independent parts:
 
 This is part 1. It wrangles the OpenStreetMap data and creates the SVG files underlying the visuals of *What the Street!?*.
 
-You can find part 2 here: TODO URL
+You can find part 2 here: [https://github.com/moovel/lab-what-the-street](https://github.com/moovel/lab-what-the-street)
 
 ## Table of Contents
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
