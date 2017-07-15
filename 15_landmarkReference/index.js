@@ -100,7 +100,7 @@ var data = {
     },
     "moscow": {
         "cars": 4014656,
-        "name": "Kolomenkoye Park",
+        "name": "Kolomenskoye Park",
         "coordinates": [37.668747, 55.670160]
     },
     "rome": {
